@@ -1,0 +1,20 @@
+import { Router } from 'express';
+import { FacturaController } from '../controllers/factura.controller';
+import { FacturaService } from '../../application/services/factura.service';
+import { FacturaRepository } from '../../application/repositories/factura.repository';
+import { FinnegansHttp } from '../../infrastructure/http/finnegans.http';
+
+export function createFacturaRoutes(http: FinnegansHttp): Router {
+  const router = Router();
+
+  // Inyección de dependencias
+  const repository = new FacturaRepository(http);
+  const service = new FacturaService(repository);
+  const controller = new FacturaController(service);
+
+  // Rutas
+  router.get('/dashboardGeneral', (req, res) => controller.obtenerDashboardGeneral(req, res));
+  router.get('/', (req, res) => controller.obtenerTodas(req, res));
+
+  return router;
+}
