@@ -28,7 +28,7 @@ export class FacturaController {
       const dashboard = await this.service.obtenerVentasXProducto();
       res.json({
         success: true,
-        data: dashboard, // Reemplazar con datos reales
+        data: dashboard,
       });
     } catch (error) {
       res.status(500).json({
@@ -37,6 +37,22 @@ export class FacturaController {
       });
     }
   }
+
+  async obtenerRankingVendedores(req: Request, res: Response): Promise<void> {
+    try {
+      const dashboard = await this.service.obtenerRankingVendedores();
+      res.json({
+        success: true,
+        data: dashboard,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'Error obteniendo ranking de vendedores',
+      });
+    }
+  }
+
   /**
    * GET /facturas
    * Obtiene todas las facturas

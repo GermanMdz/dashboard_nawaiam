@@ -84,6 +84,42 @@ export class FacturaService {
     }
   }
 
+  async obtenerRankingVendedores(): Promise<{
+    vendedor: string;
+    cantidadVentas: number;
+    ingresos: number;
+  }[]> {
+    try {
+      const facturas = await this.repository.obtenerTodas();
+
+      const map = new Map<
+        string,
+        { cantidadVentas: number; ingresos: number }
+      >();
+
+      for (const f of facturas) {
+        const key = f.vendedor || 'Sin vendedor';
+
+        if (!map.has(key)) {
+          map.set(key, { cantidadVentas: 0, ingresos: 0 });
+        }
+
+        const acc = map.get(key)!;
+        acc.cantidadVentas += 1;
+        acc.ingresos += f.total;
+      }
+
+      return Array.from(map.entries()).map(([vendedor, data]) => ({
+        vendedor,
+        cantidadVentas: data.cantidadVentas,
+        ingresos: Math.round(data.ingresos * 100) / 100,
+      }));
+    } catch (error) {
+      console.error('Error en obtenerRankingVendedores', error);
+      throw error;
+    }
+  }
+
 
   /**
    * Obtiene todas las facturas
