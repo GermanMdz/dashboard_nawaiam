@@ -7,13 +7,15 @@
   <style>
     body { font-family: system-ui, Arial; background:#f7fafc; padding:24px }
     .card { max-width:1000px; margin:auto; background:#fff; padding:20px; border-radius:8px }
-    h1 { margin-bottom:12px }
+    h1 { margin-bottom:4px }
+    .total { font-size:18px; font-weight:600; margin-bottom:16px }
     canvas { max-width:100%; height:420px }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Ventas por producto</h1>
+    <div id="total" class="total">Cargando...</div>
     <canvas id="chart"></canvas>
   </div>
 
@@ -33,7 +35,19 @@
     }
 
     async function render() {
-      const data = await fetchData();
+      let data = await fetchData();
+
+      // 🔹 1) ordenar de mayor a menor
+      data.sort((a, b) => b.totalVentas - a.totalVentas);
+
+      // 🔹 2) calcular total general
+      const totalGeneral = data.reduce(
+        (sum, d) => sum + d.totalVentas,
+        0
+      );
+
+      document.getElementById('total').textContent =
+        'Total vendido: ' + formatMoney(totalGeneral);
 
       const labels = data.map(d => d.producto);
       const ventas = data.map(d => d.totalVentas);
@@ -45,7 +59,7 @@
         data: {
           labels,
           datasets: [{
-            label: 'Total vendido',
+            label: 'Total vendido por producto',
             data: ventas,
             backgroundColor: '#60a5fa'
           }]
