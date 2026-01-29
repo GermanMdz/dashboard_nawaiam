@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "^/(.*)$", "dest": "/api/index" }
+  ],
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs18.x",
+      "maxDuration": 10
+    }
+  }
+}

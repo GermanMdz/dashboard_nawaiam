@@ -33,20 +33,24 @@ app.get('/', (req, res) => {
 });
 
 // Iniciar servidor
-const PORT = config.port;
-app.listen(PORT, () => {
-  console.log(`⭕ API iniciada en puerto ${PORT}`);
-  console.log(`Endpoints:`);
-  console.log(`   GET /clientes`);
-  console.log(`   GET /clientes/:id`);
-  console.log(`   GET /clientes/estadisticas`);
-  console.log(`   GET /productos`);
-  console.log(`   GET /productos/:id`);
-  console.log(`   GET /productos/estadisticas`);
-  console.log(`   GET /facturas`);
-  console.log(`   GET /facturas/dashboardGeneral`);
-  console.log('\n');
-});
+if (require.main === module) {
+  const PORT = config.port;
+  app.listen(PORT, () => {
+    console.log(`⭕ API iniciada en puerto ${PORT}`);
+    console.log(`Endpoints:`);
+    console.log(`   GET /clientes`);
+    console.log(`   GET /clientes/:id`);
+    console.log(`   GET /clientes/estadisticas`);
+    console.log(`   GET /productos`);
+    console.log(`   GET /productos/:id`);
+    console.log(`   GET /productos/estadisticas`);
+    console.log(`   GET /facturas`);
+    console.log(`   GET /facturas/dashboardGeneral`);
+    console.log('\n');
+  });
+}
+
+export default app;
 
 // 🔧 CAMBIO MÍNIMO: esperar el async
 (async () => {
