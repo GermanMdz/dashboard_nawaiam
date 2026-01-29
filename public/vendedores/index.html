@@ -51,6 +51,13 @@
       const ingresos = data.map(d => d.ingresos);
       const ventas = data.map(d => d.cantidadVentas);
 
+      // 🔹 Normalizar datos para que se vean al mismo nivel
+      const maxIngresos = Math.max(...ingresos);
+      const maxVentas = Math.max(...ventas);
+      
+      const ingresosNormalizados = ingresos.map(v => (v / maxIngresos) * 100);
+      const ventasNormalizadas = ventas.map(v => (v / maxVentas) * 100);
+
       const ctx = document.getElementById('chart').getContext('2d');
 
       new Chart(ctx, {
@@ -60,43 +67,33 @@
             datasets: [
             {
                 label: 'Ingresos',
-                data: ingresos,
+                data: ingresosNormalizados,
                 backgroundColor: '#22c55e',
-                yAxisID: 'yIngresos'
+                yAxisID: 'yNormalizado'
             },
             {
                 label: 'Cantidad de ventas',
-                data: ventas,
+                data: ventasNormalizadas,
                 backgroundColor: '#60a5fa',
-                yAxisID: 'yVentas'
+                yAxisID: 'yNormalizado'
             }
             ]
         },
         options: {
             responsive: true,
             scales: {
-            yIngresos: {
+            yNormalizado: {
                 type: 'linear',
                 position: 'left',
                 beginAtZero: true,
+                min: 0,
+                max: 100,
                 ticks: {
-                callback: v => formatMoney(v)
+                callback: v => `${v}%`
                 },
                 title: {
                 display: true,
-                text: 'Ingresos'
-                }
-            },
-            yVentas: {
-                type: 'linear',
-                position: 'right',
-                beginAtZero: true,
-                grid: {
-                drawOnChartArea: false
-                },
-                title: {
-                display: true,
-                text: 'Cantidad de ventas'
+                text: 'Proporción (%)'
                 }
             }
             },
@@ -104,9 +101,13 @@
             tooltip: {
                 callbacks: {
                 label: ctx => {
-                    return ctx.dataset.label === 'Ingresos'
-                    ? formatMoney(ctx.raw)
-                    : `${ctx.raw} ventas`;
+                    if (ctx.dataset.label === 'Ingresos') {
+                    const idx = ctx.dataIndex;
+                    return `${formatMoney(ingresos[idx])}`;
+                    } else {
+                    const idx = ctx.dataIndex;
+                    return `${ventas[idx]} ventas`;
+                    }
                 }
                 }
             }
