@@ -56,51 +56,64 @@
       new Chart(ctx, {
         type: 'bar',
         data: {
-          labels,
-          datasets: [
+            labels,
+            datasets: [
             {
-              label: 'Ingresos',
-              data: ingresos,
-              backgroundColor: '#22c55e',
-              yAxisID: 'y'
+                label: 'Ingresos',
+                data: ingresos,
+                backgroundColor: '#22c55e',
+                yAxisID: 'yIngresos'
             },
             {
-              label: 'Cantidad de ventas',
-              data: ventas,
-              backgroundColor: '#60a5fa',
-              yAxisID: 'y1'
+                label: 'Cantidad de ventas',
+                data: ventas,
+                backgroundColor: '#60a5fa',
+                yAxisID: 'yVentas'
             }
-          ]
+            ]
         },
         options: {
-          responsive: true,
-          interaction: { mode: 'index', intersect: false },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
+            responsive: true,
+            scales: {
+            yIngresos: {
+                type: 'linear',
+                position: 'left',
+                beginAtZero: true,
+                ticks: {
                 callback: v => formatMoney(v)
-              }
-            },
-            y1: {
-              beginAtZero: true,
-              position: 'right',
-              grid: { drawOnChartArea: false }
-            }
-          },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: ctx => {
-                  if (ctx.datasetIndex === 0)
-                    return 'Ingresos: ' + formatMoney(ctx.raw);
-                  return 'Ventas: ' + ctx.raw;
+                },
+                title: {
+                display: true,
+                text: 'Ingresos'
                 }
-              }
+            },
+            yVentas: {
+                type: 'linear',
+                position: 'right',
+                beginAtZero: true,
+                grid: {
+                drawOnChartArea: false
+                },
+                title: {
+                display: true,
+                text: 'Cantidad de ventas'
+                }
             }
-          }
+            },
+            plugins: {
+            tooltip: {
+                callbacks: {
+                label: ctx => {
+                    return ctx.dataset.label === 'Ingresos'
+                    ? formatMoney(ctx.raw)
+                    : `${ctx.raw} ventas`;
+                }
+                }
+            }
+            }
         }
-      });
+        });
+
     }
 
     render();
