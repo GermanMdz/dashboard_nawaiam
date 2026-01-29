@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dashboard Clientes - Finnegans</title>
+    <style>
+      body{font-family:Inter, system-ui, Arial, sans-serif;margin:20px;background:#f7fafc;color:#0f172a}
+      .card{background:#fff;border-radius:8px;padding:20px;box-shadow:0 2px 8px rgba(2,6,23,0.06);max-width:900px;margin:0 auto}
+      h1{font-size:20px;margin:0 0 12px}
+      .meta{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+      .meta .item{background:#f1f5f9;padding:8px 12px;border-radius:6px;font-weight:600}
+      canvas{max-width:100%;height:360px}
+      .list{display:flex;gap:12px;margin-top:12px}
+      .list .stat{flex:1;padding:12px;background:#0f172a;color:#fff;border-radius:6px;text-align:center}
+      .muted{color:#64748b;font-size:13px}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Dashboard General</h1>
+      <div id="mes" class="muted">Cargando...</div>
+      <div class="meta" id="meta"></div>
+      <canvas id="chart"></canvas>
+      <div class="list" id="lista"></div>
+    </div>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      async function fetchDashboard(){
+        try{
+          const res = await fetch('/facturas/dashboardGeneral');
+          if(!res.ok) throw new Error('Error fetching');
+          const json = await res.json();
+          return json.data;
+        }catch(e){
+          console.error(e);
+          return null;
+        }
+      }
+
+      function formatMoney(v){
+        return new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(v);
+      }
+
+      function renderSummary(d){
+        const meta = document.getElementById('meta');
+        meta.innerHTML = '';
+        const mes = document.getElementById('mes');
+        mes.textContent = 'Mes: ' + (d.mesActual || '—');
+
+        const items = [
+          {k:'totalVentas', t:'Total ventas', v:formatMoney(d.totalVentas)},
+          {k:'cantidadFacturas', t:'Cantidad facturas', v:d.cantidadFacturas},
+          {k:'promedioPorFactura', t:'Promedio por factura', v:formatMoney(d.promedioPorFactura)},
+          {k:'montoPendiente', t:'Monto pendiente', v:formatMoney(d.montoPendiente)}
+        ];
+
+        items.forEach(it=>{
+          const el = document.createElement('div');
+          el.className = 'item';
+          el.textContent = `${it.t}: ${it.v}`;
+          meta.appendChild(el);
+        });
+
+        const lista = document.getElementById('lista');
+        lista.innerHTML = '';
+        items.forEach(it=>{
+          const s = document.createElement('div');
+          s.className = 'stat';
+          s.innerHTML = `<div style="font-size:13px;opacity:.9">${it.t}</div><div style="font-size:18px;margin-top:8px">${it.v}</div>`;
+          lista.appendChild(s);
+        });
+      }
+
+      function renderChart(d){
+        const ctx = document.getElementById('chart').getContext('2d');
+        const labels = ['Total ventas','Cantidad facturas','Promedio por factura','Monto pendiente'];
+        const values = [d.totalVentas,d.cantidadFacturas,d.promedioPorFactura,d.montoPendiente];
+
+        // Normalize numbers for better visual comparison: scale down by largest value
+        const max = Math.max(...values.map(v=>Math.abs(v)||0));
+        const scaled = values.map(v => max ? (v / max) * 100 : 0);
+
+        // Destroy previous chart if exists
+        if(window._finChart) window._finChart.destroy();
+
+        window._finChart = new Chart(ctx,{
+          type: 'bar',
+          data: {
+            labels,
+            datasets:[{
+              label: 'Comparación (normalizada)',
+              data: scaled,
+              backgroundColor: ['#0ea5a4','#60a5fa','#f97316','#ef4444']
+            }]
+          },
+          options: {
+            scales: {
+              y: { beginAtZero:true, ticks:{callback: v => v + '%'} }
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: ctx => {
+                    const idx = ctx.dataIndex;
+                    const real = values[idx];
+                    return `${labels[idx]}: ${idx===1? real : formatMoney(real)}`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      (async ()=>{
+        const data = await fetchDashboard();
+        if(!data){ document.getElementById('mes').textContent='Error cargando datos'; return; }
+        renderSummary(data);
+        renderChart(data);
+      })();
+    </script>
+  </body>
+</html>
