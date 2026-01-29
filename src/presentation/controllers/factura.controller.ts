@@ -23,6 +23,20 @@ export class FacturaController {
     }
   }
 
+  async obtenerVentasXProducto(req: Request, res: Response): Promise<void> {
+    try {
+      const dashboard = await this.service.obtenerVentasXProducto();
+      res.json({
+        success: true,
+        data: dashboard, // Reemplazar con datos reales
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'Error obteniendo ventas por producto',
+      });
+    }
+  }
   /**
    * GET /facturas
    * Obtiene todas las facturas

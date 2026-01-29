@@ -14,6 +14,7 @@ export function createFacturaRoutes(http: FinnegansHttp): Router {
 
   // Rutas
   router.get('/dashboardGeneral', (req, res) => controller.obtenerDashboardGeneral(req, res));
+  router.get('/ventas-por-producto', (req, res) => controller.obtenerVentasXProducto(req, res));
   router.get('/', (req, res) => controller.obtenerTodas(req, res));
 
   return router;
