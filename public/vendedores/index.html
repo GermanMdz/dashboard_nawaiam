@@ -51,12 +51,10 @@
       const ingresos = data.map(d => d.ingresos);
       const ventas = data.map(d => d.cantidadVentas);
 
-      // 🔹 Normalizar datos para que se vean al mismo nivel
-      const maxIngresos = Math.max(...ingresos);
+      // 🔹 Normalizar ventas a la escala de ingresos
       const maxVentas = Math.max(...ventas);
-      
-      const ingresosNormalizados = ingresos.map(v => (v / maxIngresos) * 100);
-      const ventasNormalizadas = ventas.map(v => (v / maxVentas) * 100);
+      const maxIngresos = Math.max(...ingresos);
+      const ventasEscaladas = ventas.map(v => (v / maxVentas) * maxIngresos);
 
       const ctx = document.getElementById('chart').getContext('2d');
 
@@ -67,33 +65,31 @@
             datasets: [
             {
                 label: 'Ingresos',
-                data: ingresosNormalizados,
+                data: ingresos,
                 backgroundColor: '#22c55e',
-                yAxisID: 'yNormalizado'
+                yAxisID: 'y'
             },
             {
-                label: 'Cantidad de ventas',
-                data: ventasNormalizadas,
+                label: 'Cantidad de ventas (escaladas)',
+                data: ventasEscaladas,
                 backgroundColor: '#60a5fa',
-                yAxisID: 'yNormalizado'
+                yAxisID: 'y'
             }
             ]
         },
         options: {
             responsive: true,
             scales: {
-            yNormalizado: {
+            y: {
                 type: 'linear',
                 position: 'left',
                 beginAtZero: true,
-                min: 0,
-                max: 100,
                 ticks: {
-                callback: v => `${v}%`
+                callback: v => formatMoney(v)
                 },
                 title: {
                 display: true,
-                text: 'Proporción (%)'
+                text: 'Ingresos / Escala de ventas'
                 }
             }
             },
@@ -103,10 +99,10 @@
                 label: ctx => {
                     if (ctx.dataset.label === 'Ingresos') {
                     const idx = ctx.dataIndex;
-                    return `${formatMoney(ingresos[idx])}`;
+                    return `Ingresos: ${formatMoney(ingresos[idx])}`;
                     } else {
                     const idx = ctx.dataIndex;
-                    return `${ventas[idx]} ventas`;
+                    return `Ventas: ${ventas[idx]} unidades`;
                     }
                 }
                 }
