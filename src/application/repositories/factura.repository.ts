@@ -1,36 +1,57 @@
 import { FinnegansHttp } from '../../infrastructure/http/finnegans.http';
 import { Factura } from '../../domain/entities/factura.entity';
-import { redis } from '../../infrastructure/config/kv.config';
+import { Redis } from '@upstash/redis';
 
 export class FacturaRepository {
+  private redis: Redis;
   private readonly CACHE_KEY = 'facturas:todas';
   private readonly CACHE_TTL = 3600;
 
-  constructor(private http: FinnegansHttp) {}
+  constructor(private http: FinnegansHttp) {
+    this.redis = new Redis({
+      url: process.env.KV_REST_API_URL!,
+      token: process.env.KV_REST_API_TOKEN!,
+    });
+  }
 
   async obtenerTodas(): Promise<Factura[]> {
     try {
-      const cached = await redis.get<string>(this.CACHE_KEY);
+      // Intentar obtener del caché
+      console.log('🔍 Buscando en caché...');
+      const cached = await this.redis.hgetall(this.CACHE_KEY).catch(() => null);
       
-      if (cached) {
-        console.log('📦 Datos desde Redis (Upstash)');
-        return JSON.parse(cached);
+      if (cached && Object.keys(cached).length > 0) {
+        console.log('📦 Datos desde Redis (caché)');
+        // Redis devuelve un objeto, convertirlo a array de facturas
+        return Object.values(cached) as Factura[];
       }
 
+      // Si no hay caché, hacer la petición a la API
+      console.log('🔄 Solicitando datos a Finnegans API...');
       const datos = await this.http.get<any[]>('/reports/ANAFACTURACION');
+      
+      // Normalizar datos
       const facturas = Array.isArray(datos) 
         ? datos.map(d => this.normalizar(d)) 
         : [];
 
-      await redis.setex(
-        this.CACHE_KEY,
-        this.CACHE_TTL,
-        JSON.stringify(facturas)
-      );
-
+      // Guardar en caché como hash
+      if (facturas.length > 0) {
+        console.log('💾 Guardando en Redis...');
+        const cacheData: Record<string, any> = {};
+        facturas.forEach((f, idx) => {
+          cacheData[`factura:${idx}`] = f;
+        });
+        
+        await this.redis.hset(this.CACHE_KEY, cacheData);
+        await this.redis.expire(this.CACHE_KEY, this.CACHE_TTL);
+      }
+      
+      console.log(`✅ ${facturas.length} facturas guardadas en caché`);
       return facturas;
+      
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Error en FacturaRepository.obtenerTodas:', error);
       throw error;
     }
   }
@@ -44,6 +65,11 @@ export class FacturaRepository {
       console.error('Error en FacturaRepository.obtenerPorMes:', error);
       throw error;
     }
+  }
+
+  async invalidarCache(): Promise<void> {
+    await this.redis.del(this.CACHE_KEY);
+    console.log('🗑️ Caché invalidado');
   }
 
   private normalizar(data: any): Factura {

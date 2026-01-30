@@ -17,6 +17,21 @@ export function createFacturaRoutes(http: FinnegansHttp): Router {
   router.get('/ventas-por-producto', (req, res) => controller.obtenerVentasXProducto(req, res));
   router.get('/ranking-vendedores', (req, res) => controller.obtenerRankingVendedores(req, res));
   router.get('/', (req, res) => controller.obtenerTodas(req, res));
-
+  
+  // borrar caché:
+  router.post('/cache/refresh', async (req, res) => {
+    try {
+      await repository.invalidarCache();
+      res.json({
+        success: true,
+        message: 'Caché eliminada, próxima petición traerá datos frescos'
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'Error limpiando caché'
+      });
+    }
+  });
   return router;
 }
