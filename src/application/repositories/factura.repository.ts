@@ -1,15 +1,36 @@
 import { FinnegansHttp } from '../../infrastructure/http/finnegans.http';
 import { Factura } from '../../domain/entities/factura.entity';
+import { redis } from '../../infrastructure/config/kv.config';
 
 export class FacturaRepository {
+  private readonly CACHE_KEY = 'facturas:todas';
+  private readonly CACHE_TTL = 3600;
+
   constructor(private http: FinnegansHttp) {}
 
   async obtenerTodas(): Promise<Factura[]> {
     try {
+      const cached = await redis.get<string>(this.CACHE_KEY);
+      
+      if (cached) {
+        console.log('📦 Datos desde Redis (Upstash)');
+        return JSON.parse(cached);
+      }
+
       const datos = await this.http.get<any[]>('/reports/ANAFACTURACION');
-      return Array.isArray(datos) ? datos.map(d => this.normalizar(d)) : [];
+      const facturas = Array.isArray(datos) 
+        ? datos.map(d => this.normalizar(d)) 
+        : [];
+
+      await redis.setex(
+        this.CACHE_KEY,
+        this.CACHE_TTL,
+        JSON.stringify(facturas)
+      );
+
+      return facturas;
     } catch (error) {
-      console.error('Error en FacturaRepository.obtenerTodas:', error);
+      console.error('Error:', error);
       throw error;
     }
   }

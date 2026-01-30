@@ -1,3 +1,4 @@
+Redis db name: upstash-kv-lightBlue-yacht
 {
 TRANSACCIONSUBTIPOID: 190,
 FECHA: "05-01-2026",
