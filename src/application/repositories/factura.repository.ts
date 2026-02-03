@@ -89,6 +89,7 @@ export class FacturaRepository {
       importePendiente: parseFloat(data.IMPORTENETOPENDIENTE) || 0,
       comprobante: data.COMPROBANTE || '',
       descripcion: data.DESCRIPCION || '',
+      numeroContrato: data.NUMEROCONTRATO || '',
     };
   }
 }

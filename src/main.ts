@@ -26,8 +26,10 @@ app.get('/', (req, res) => {
   res.json({
     message: '✅ API Finnegans funcionando',
     endpoints: {
-      clientes: '/clientes',
+      facturas: '/facturas',
       productos: '/productos',
+      vendedores: '/vendedores',
+      contratos: '/contratos',
     },
   });
 });

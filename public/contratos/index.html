@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Contratos</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial; background:#f7fafc; padding:24px }
+    .card { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(2,6,23,0.06) }
+    h1 { margin-bottom:12px; font-size:20px }
+    .subtitle { color:#64748b; margin-bottom:24px; font-size:13px }
+    .section { margin-bottom:32px }
+    .section-title { font-weight:600; margin-bottom:12px; color:#0f172a; font-size:14px }
+    .chart-container { position: relative; height: 350px; width: 100%; }
+    .chart-circular-wrapper { max-width: 400px; margin: 0 auto; }
+    .chart-circular { position: relative; height: 350px; }
+  </style>
+  <script src="../components/nav-bar-custom.js" defer></script>
+</head>
+<body>
+  <nav-bar-custom></nav-bar-custom>
+  <div class="card">
+    <h1>Contratos</h1>
+    <div class="subtitle">Análisis de tipos de contrato y segmentación de ventas</div>
+    
+    <div class="section">
+      <div class="section-title">Tipo de Contrato</div>
+      <div class="chart-container">
+        <canvas id="chartTipoContrato"></canvas>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-title">Segmentación de Ventas</div>
+      <div class="chart-circular-wrapper">
+        <div class="chart-circular">
+          <canvas id="chartSegmentacion"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    function mapContractType(numeroContrato) {
+      switch(numeroContrato) {
+        case '0001': return 'Nuevos';
+        case '0002': return 'Recompra';
+        case 'orientacion vocacional': return 'Orientación Vocacional';
+        case 'conocete': return 'Conócete';
+        default: return 'Otros';
+      }
+    }
+
+    function getSegmentationType(numeroContrato) {
+      return (numeroContrato === '0001' || numeroContrato === '0002') ? 'B2B' : 'Marketplace';
+    }
+
+    async function render() {
+      const res = await fetch('/facturas/contratos');
+      const contratos = await res.json();
+      const data = contratos.data;
+
+      const tipoContratoMap = {};
+      const segmentacionMap = { 'B2B': 0, 'Marketplace': 0 };
+
+      data.forEach(c => {
+        const tipoContrato = mapContractType(c.numeroContrato);
+        const segmentacion = getSegmentationType(c.numeroContrato);
+        
+        if (!tipoContratoMap[tipoContrato]) {
+          tipoContratoMap[tipoContrato] = 0;
+        }
+
+        tipoContratoMap[tipoContrato] += c.totalVentas;
+        segmentacionMap[segmentacion] += c.cantidad;
+      });
+
+      // Gráfico barras - Total de ventas por tipo de contrato
+      const ctx1 = document.getElementById('chartTipoContrato').getContext('2d');
+      new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(tipoContratoMap),
+          datasets: [{ label: 'Total de ventas', data: Object.values(tipoContratoMap), backgroundColor: '#60a5fa' }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true } },
+          plugins: { 
+            legend: { display: true }, 
+            tooltip: { callbacks: { label: ctx => `$${ctx.raw.toLocaleString()}` } } 
+          }
+        }
+      });
+
+      // Gráfico circular - Segmentación B2B vs Marketplace
+      const ctx2 = document.getElementById('chartSegmentacion').getContext('2d');
+      new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(segmentacionMap),
+          datasets: [{ data: Object.values(segmentacionMap), backgroundColor: ['#0ea5a4', '#f97316'] }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, position: 'bottom' },
+            tooltip: { callbacks: { label: ctx => { const total = Object.values(segmentacionMap).reduce((a, b) => a + b, 0); const percentage = ((ctx.raw / total) * 100).toFixed(1); return `${ctx.label}: ${ctx.raw} ventas (${percentage}%)`; } } }
+          }
+        }
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>

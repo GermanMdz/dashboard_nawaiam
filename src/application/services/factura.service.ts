@@ -120,6 +120,37 @@ export class FacturaService {
     }
   }
 
+  async obtenerContratos(): Promise<{
+    numeroContrato: string;
+    cantidad: number;
+    totalVentas: number;
+  }[]> {
+    try {
+      const facturas = await this.repository.obtenerTodas();
+
+      const contratos: { [key: string]: { cantidad: number; totalVentas: number } } = {};
+
+      for (const f of facturas) {
+        const numeroContrato = f.numeroContrato?.trim() || 'Otros';
+        
+        if (!contratos[numeroContrato]) {
+          contratos[numeroContrato] = { cantidad: 0, totalVentas: 0 };
+        }
+
+        contratos[numeroContrato].cantidad += 1;
+        contratos[numeroContrato].totalVentas += f.total;
+      }
+
+      return Object.entries(contratos).map(([numeroContrato, data]) => ({
+        numeroContrato,
+        cantidad: data.cantidad,
+        totalVentas: Math.round(data.totalVentas * 100) / 100,
+      }));
+    } catch (error) {
+      console.error('Error en obtenerContratos', error);
+      throw error;
+    }
+  }
 
   /**
    * Obtiene todas las facturas

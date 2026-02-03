@@ -14,5 +14,6 @@ export interface Factura {
   importePendiente: number;
   comprobante: string;
   descripcion: string;
+  numeroContrato: string;
   [key: string]: any;
 }
