@@ -43,10 +43,11 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     function mapContractType(numeroContrato) {
-      switch(numeroContrato) {
+      const cleaned = numeroContrato.trim().toLowerCase();
+      switch(cleaned) {
         case '0001': return 'Nuevos';
         case '0002': return 'Recompra';
-        case 'orientacion vocacional': return 'Orientación Vocacional';
+        case 'orientación vocacional': return 'Orientación Vocacional';
         case 'conocete': return 'Conócete';
         default: return 'Otros';
       }
