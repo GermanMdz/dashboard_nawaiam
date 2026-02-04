@@ -56,14 +56,20 @@
       const empresaMap = {};
 
       facturas.forEach(f => {
-        const region = mapEmpresa(f.empresa);
+        // Soporta dos formas de respuesta:
+        // 1) Agregada desde backend: { empresa, cantidadFacturas, totalVentas }
+        // 2) Cruda por factura: { EMPRESA, TOTAL, ... }
+        const region = mapEmpresa(f.empresa ?? f.EMPRESA ?? '');
 
         if (!empresaMap[region]) {
           empresaMap[region] = { ingresos: 0, ventas: 0 };
         }
 
-        empresaMap[region].ingresos += f.total;
-        empresaMap[region].ventas += 1;
+        const ingresosItem = Number(f.total ?? f.totalVentas ?? f.TOTAL ?? f.TOTALBRUTO ?? f.IMPORTE ?? 0);
+        const ventasItem = Number(f.cantidadFacturas ?? f.ventas ?? 1);
+
+        empresaMap[region].ingresos += Number.isNaN(ingresosItem) ? 0 : ingresosItem;
+        empresaMap[region].ventas += Number.isNaN(ventasItem) ? 0 : ventasItem;
       });
 
       // Ordenar por ingresos (desc)
@@ -80,8 +86,10 @@
       document.getElementById('total').textContent =
         `Ingresos totales: ${formatMoney(totalIngresos)} · Ventas: ${totalVentas}`;
 
-      // Convertir ventas a porcentajes
-      const ventasPercentage = ventas.map(v => (v / totalVentas) * 100);
+      // Convertir ventas a porcentajes (proteger división por cero)
+      const ventasPercentage = totalVentas
+        ? ventas.map(v => (v / totalVentas) * 100)
+        : ventas.map(() => 0);
 
       const ctx = document.getElementById('chart').getContext('2d');
 
