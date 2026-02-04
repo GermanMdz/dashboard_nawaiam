@@ -56,7 +56,7 @@
       const empresaMap = {};
 
       facturas.forEach(f => {
-        const region = mapEmpresa(f.EMPRESA);
+        const region = mapEmpresa(f.empresa);
 
         if (!empresaMap[region]) {
           empresaMap[region] = { ingresos: 0, ventas: 0 };
