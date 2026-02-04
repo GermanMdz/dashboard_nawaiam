@@ -90,6 +90,7 @@ export class FacturaRepository {
       comprobante: data.COMPROBANTE || '',
       descripcion: data.DESCRIPCION || '',
       numeroContrato: data.NUMEROCONTRATO || '',
+      empresa: data.EMPRESA || '',
     };
   }
 }

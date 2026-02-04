@@ -30,6 +30,7 @@ app.get('/', (req, res) => {
       productos: '/productos',
       vendedores: '/vendedores',
       contratos: '/contratos',
+      empresas: '/empresas',
     },
   });
 });

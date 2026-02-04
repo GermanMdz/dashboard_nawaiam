@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { FacturaService } from '../../application/services/factura.service';
 
 export class FacturaController {
-  constructor(private service: FacturaService) {}
+  constructor(private service: FacturaService) { }
 
   /**
    * GET /facturas/dashboard
@@ -55,18 +55,33 @@ export class FacturaController {
 
   async obtenerContratos(req: Request, res: Response): Promise<void> {
     try {
-        const dashboard = await this.service.obtenerContratos();
-        res.json({
-          success: true,
-          data: dashboard,
-        });
-      } catch (error) {
-        res.status(500).json({
-          success: false,
-          error: 'Error obteniendo contratos',
-        });
-      }
+      const dashboard = await this.service.obtenerContratos();
+      res.json({
+        success: true,
+        data: dashboard,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'Error obteniendo contratos',
+      });
     }
+  }
+
+  async obtenerEmpresas(req: Request, res: Response): Promise<void> {
+    try {
+      const dashboard = await this.service.obtenerEmpresas();
+      res.json({
+        success: true,
+        data: dashboard,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'Error obteniendo empresas',
+      });
+    }
+  }
 
   /**
    * GET /facturas

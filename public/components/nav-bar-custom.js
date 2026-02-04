@@ -8,6 +8,7 @@ class NavBarCustom extends HTMLElement {
           <option value="/productos">Ventas por producto</option>
           <option value="/vendedores">Ranking vendedores</option>
           <option value="/contratos">Contratos</option>
+          <option value="/empresas">Empresas</option>
         </select>
       </div>
     `;

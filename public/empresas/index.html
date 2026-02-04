@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Empresas</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial; background:#f7fafc; padding:24px }
+    .card { max-width:1000px; margin:auto; background:#fff; padding:20px; border-radius:8px }
+    h1 { margin-bottom:4px }
+    .total { font-size:16px; font-weight:600; margin-bottom:16px }
+    canvas { max-width:100%; height:420px }
+  </style>
+  <script src="../components/nav-bar-custom.js" defer></script>
+</head>
+<body>
+  <nav-bar-custom></nav-bar-custom>
+  <div class="card">
+    <h1>Empresas</h1>
+    <div id="total" class="total">Cargando...</div>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    async function fetchData() {
+      const res = await fetch('/facturas/empresas');
+      const json = await res.json();
+      return json.data;
+    }
+
+    function mapEmpresa(empresa) {
+      const cleaned = empresa?.trim().toLowerCase() || '';
+      switch(cleaned) {
+        case 'nawaiam sa':
+          return 'Argentina';
+        case 'nawaiam españa':
+          return 'España';
+        case 'tu primera pega spa':
+          return 'Latinoamérica';
+        default:
+          return 'Otros';
+      }
+    }
+
+    function formatMoney(v) {
+      return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS'
+      }).format(v);
+    }
+
+    async function render() {
+      let facturas = await fetchData();
+
+      const empresaMap = {};
+
+      facturas.forEach(f => {
+        const region = mapEmpresa(f.EMPRESA);
+
+        if (!empresaMap[region]) {
+          empresaMap[region] = { ingresos: 0, ventas: 0 };
+        }
+
+        empresaMap[region].ingresos += f.total;
+        empresaMap[region].ventas += 1;
+      });
+
+      // Ordenar por ingresos (desc)
+      const sorted = Object.entries(empresaMap).sort((a, b) => b[1].ingresos - a[1].ingresos);
+
+      const labels = sorted.map(([region]) => region);
+      const ingresos = sorted.map(([, data]) => data.ingresos);
+      const ventas = sorted.map(([, data]) => data.ventas);
+
+      // Calcular totales
+      const totalIngresos = ingresos.reduce((s, v) => s + v, 0);
+      const totalVentas = ventas.reduce((s, v) => s + v, 0);
+
+      document.getElementById('total').textContent =
+        `Ingresos totales: ${formatMoney(totalIngresos)} · Ventas: ${totalVentas}`;
+
+      // Convertir ventas a porcentajes
+      const ventasPercentage = ventas.map(v => (v / totalVentas) * 100);
+
+      const ctx = document.getElementById('chart').getContext('2d');
+
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Ingresos',
+              data: ingresos,
+              backgroundColor: '#22c55e',
+              yAxisID: 'y'
+            },
+            {
+              label: '% de ventas',
+              data: ventasPercentage,
+              backgroundColor: '#60a5fa',
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              type: 'linear',
+              position: 'left',
+              beginAtZero: true,
+              ticks: {
+                callback: v => formatMoney(v)
+              },
+              title: {
+                display: true,
+                text: 'Ingresos'
+              }
+            },
+            y1: {
+              type: 'linear',
+              position: 'right',
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: v => v + '%'
+              },
+              title: {
+                display: true,
+                text: '% de ventas'
+              },
+              grid: {
+                drawOnChartArea: false
+              }
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  if (ctx.dataset.label === 'Ingresos') {
+                    const idx = ctx.dataIndex;
+                    return `Ingresos: ${formatMoney(ingresos[idx])}`;
+                  } else {
+                    const idx = ctx.dataIndex;
+                    return `Ventas: ${ventas[idx]} (${ventasPercentage[idx].toFixed(1)}%)`;
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>

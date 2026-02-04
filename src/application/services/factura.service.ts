@@ -152,6 +152,42 @@ export class FacturaService {
     }
   }
 
+  async obtenerEmpresas(): Promise<{
+    empresa: string;
+    cantidadFacturas: number;
+    totalVentas: number;
+  }[]> {
+    try {
+      const facturas = await this.repository.obtenerTodas();
+
+      const map = new Map<
+        string,
+        { cantidadFacturas: number; totalVentas: number }
+      >();
+
+      for (const f of facturas) {
+        const key = f.empresa || 'Sin empresa';
+
+        if (!map.has(key)) {
+          map.set(key, { cantidadFacturas: 0, totalVentas: 0 });
+        }
+
+        const acc = map.get(key)!;
+        acc.cantidadFacturas += 1;
+        acc.totalVentas += f.total;
+      }
+
+      return Array.from(map.entries()).map(([empresa, data]) => ({
+        empresa,
+        cantidadFacturas: data.cantidadFacturas,
+        totalVentas: Math.round(data.totalVentas * 100) / 100,
+      }));
+    } catch (error) {
+      console.error('Error en obtenerEmpresas', error);
+      throw error;
+    }
+  }
+
   /**
    * Obtiene todas las facturas
    */

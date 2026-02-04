@@ -13,7 +13,7 @@
                 "COMPROBANTE": "A-0004-00000792",
                 "COMPROBANTEADICIONAL": "",
                 // otro filtro: 0001 nuevos, 0002 recompra, orientacion vocacional, conocete
-                // 0001 y 0002 ventas b2b, el resto marketplace
+                // 0001 y 0002 ventas b2b, el resto marketplace, por pais
                 "NUMEROCONTRATO": "0002", 
                 "DIMENSIONVALOR": "Sin dimensión valor",
                 "TOTALBRUTO": 376612.5,
@@ -56,7 +56,6 @@
                 "IMPORTEPENDIENTEDESTINO": 376612.5,
                 "ORGANIZACION": null,
                 "CUENTA": "Venta de suscripciones",
-                // otro filtro: por pais
                 "EMPRESA": "Nawaiam SA",
                 "ANO": "2026",
                 "ANO_MES": "2026-01",
