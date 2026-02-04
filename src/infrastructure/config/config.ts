@@ -7,5 +7,7 @@ export const config = {
   finnegans: {
     url: process.env.FINNEGANS_URL || 'https://api.finneg.com/api',
     token: process.env.FINNEGANS_TOKEN || '',
+    clientId: process.env.FINNEGANS_CLIENT_ID || '',
+    clientSecret: process.env.FINNEGANS_CLIENT_SECRET || '',
   },
 };

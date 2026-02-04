@@ -10,9 +10,11 @@ const app = express();
 // Middleware
 app.use(express.json());
 
-// Inicializar cliente HTTP de Finnegans
+// Inicializar cliente HTTP de Finnegans (autorefresh token)
 const finnegansHttp = new FinnegansHttp(
   config.finnegans.url,
+  config.finnegans.clientId,
+  config.finnegans.clientSecret,
   config.finnegans.token
 );
 
