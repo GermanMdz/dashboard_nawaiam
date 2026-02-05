@@ -10,6 +10,11 @@
     h1 { margin-bottom:12px; font-size:20px }
     .subtitle { color:#64748b; margin-bottom:24px; font-size:13px }
     canvas { max-width:100%; height:400px }
+    .demo-data { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+    .demo-data h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+    .demo-data table { width: 100%; border-collapse: collapse; }
+    .demo-data th { background: #f1f5f9; padding: 8px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600; font-size: 12px; }
+    .demo-data td { padding: 8px; border: 1px solid #e2e8f0; font-size: 14px; }
   </style>
   <script src="../components/nav-bar-custom.js" defer></script>
 </head>
@@ -18,7 +23,22 @@
   <div class="card">
     <h1>Dashboard General</h1>
     <div class="subtitle" id="mes">Cargando...</div>
+    
     <canvas id="chart"></canvas>
+
+    <div class="demo-data">
+      <!-- <h3>Resumen del Mes</h3> -->
+      <table>
+        <thead>
+          <tr>
+            <th>Métrica</th>
+            <th>Valor</th>
+          </tr>
+        </thead>
+        <tbody id="demoTable">
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -35,13 +55,20 @@
       }
     }
 
+    function formatMoney(v) {
+      return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS'
+      }).format(v);
+    }
+
     function render(d) {
       const mes = document.getElementById('mes');
       mes.textContent = 'Mes: ' + (d.mesActual || '—');
 
       const ctx = document.getElementById('chart').getContext('2d');
-      const labels = ['Total ventas', 'Cantidad facturas', 'Promedio por factura', 'Monto pendiente'];
-      const values = [d.totalVentas, d.cantidadFacturas, d.promedioPorFactura, d.montoPendiente];
+      const labels = ['Total ventas', 'Promedio por factura', 'Cantidad facturas'];
+      const values = [d.totalVentas, d.promedioPorFactura, d.cantidadFacturas];
 
       // Normalizar para comparación visual
       const max = Math.max(...values.map(v => Math.abs(v) || 0));
@@ -56,7 +83,7 @@
           datasets: [{
             label: 'Comparación (normalizada)',
             data: scaled,
-            backgroundColor: ['#0ea5a4', '#60a5fa', '#f97316', '#ef4444']
+            backgroundColor: ['#0ea5a4', '#f97316', '#60a5fa']
           }]
         },
         options: {
@@ -71,13 +98,37 @@
                 label: ctx => {
                   const idx = ctx.dataIndex;
                   const real = values[idx];
-                  return `${labels[idx]}: ${real}`;
+                  if (idx === 0) {
+                    return `${labels[idx]}: ${formatMoney(real)}`;
+                  } else if (idx === 1) {
+                    return `${labels[idx]}: ${formatMoney(real)}`;
+                  } else {
+                    return `${labels[idx]}: ${Math.round(real)} facturas`;
+                  }
                 }
               }
             }
           }
         }
       });
+
+      // Renderizar tabla de datos
+      const tbody = document.getElementById('demoTable');
+      tbody.innerHTML = `
+        <tr>
+          <td><strong>Total Ventas</strong></td>
+          <td>${formatMoney(d.totalVentas)}</td>
+        </tr>
+        <tr>
+          <td><strong>Promedio por Factura</strong></td>
+          <td>${formatMoney(d.promedioPorFactura)}</td>
+        </tr>
+        <tr>
+          <td><strong>Cantidad de Facturas</strong></td>
+          <td>${d.cantidadFacturas}</td>
+        </tr>
+        
+      `;
     }
 
     (async () => {
