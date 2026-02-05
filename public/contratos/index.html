@@ -42,6 +42,12 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    // ✅ Colores consistentes
+    const COLORS = {
+      B2B: '#0ea5a4',           // Teal (Nuevos y Recompra)
+      MARKETPLACE: '#f97316'     // Orange (Otros)
+    };
+
     function mapContractType(numeroContrato) {
       const cleaned = numeroContrato.trim().toLowerCase();
       switch(cleaned) {
@@ -55,6 +61,15 @@
 
     function getSegmentationType(numeroContrato) {
       return (numeroContrato === '0001' || numeroContrato === '0002') ? 'B2B' : 'Marketplace';
+    }
+
+    function getColorByContractType(tipoContrato) {
+      // Nuevos y Recompra = B2B color
+      if (tipoContrato === 'Nuevos' || tipoContrato === 'Recompra') {
+        return COLORS.B2B;
+      }
+      // El resto = Marketplace color
+      return COLORS.MARKETPLACE;
     }
 
     async function render() {
@@ -77,13 +92,21 @@
         segmentacionMap[segmentacion] += c.cantidad;
       });
 
-      // Gráfico barras - Total de ventas por tipo de contrato
+      // ✅ Gráfico barras - Total de ventas por tipo de contrato CON COLORES CONSISTENTES
       const ctx1 = document.getElementById('chartTipoContrato').getContext('2d');
+      const tipoContratoLabels = Object.keys(tipoContratoMap);
+      const tipoContratoValues = Object.values(tipoContratoMap);
+      const tipoContratoColors = tipoContratoLabels.map(label => getColorByContractType(label));
+
       new Chart(ctx1, {
         type: 'bar',
         data: {
-          labels: Object.keys(tipoContratoMap),
-          datasets: [{ label: 'Total de ventas', data: Object.values(tipoContratoMap), backgroundColor: '#60a5fa' }]
+          labels: tipoContratoLabels,
+          datasets: [{ 
+            label: 'Total de ventas', 
+            data: tipoContratoValues, 
+            backgroundColor: tipoContratoColors  // ✅ Colores por tipo
+          }]
         },
         options: {
           responsive: true,
@@ -96,13 +119,16 @@
         }
       });
 
-      // Gráfico circular - Segmentación B2B vs Marketplace
+      // ✅ Gráfico circular - Segmentación B2B vs Marketplace
       const ctx2 = document.getElementById('chartSegmentacion').getContext('2d');
       new Chart(ctx2, {
         type: 'doughnut',
         data: {
           labels: Object.keys(segmentacionMap),
-          datasets: [{ data: Object.values(segmentacionMap), backgroundColor: ['#0ea5a4', '#f97316'] }]
+          datasets: [{ 
+            data: Object.values(segmentacionMap), 
+            backgroundColor: [COLORS.B2B, COLORS.MARKETPLACE]  // ✅ Colores consistentes
+          }]
         },
         options: {
           responsive: true,
