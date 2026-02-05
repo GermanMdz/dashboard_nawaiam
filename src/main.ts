@@ -15,7 +15,6 @@ const finnegansHttp = new FinnegansHttp(
   config.finnegans.url,
   config.finnegans.clientId,
   config.finnegans.clientSecret,
-  config.finnegans.token
 );
 
 // Rutas
