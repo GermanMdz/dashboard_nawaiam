@@ -155,10 +155,11 @@
         segmentacionMap[segmentacion] += c.cantidad;
       });
 
-      // Gráfico barras
+      // Gráfico barras - Ordenar en orden fijo
       const ctx1 = document.getElementById('chartTipoContrato').getContext('2d');
-      const tipoContratoLabels = Object.keys(tipoContratoMap);
-      const tipoContratoValues = Object.values(tipoContratoMap);
+      const ordenFijo = ['Nuevos', 'Recompra', 'Orientación Vocacional', 'Conócete', 'Otros'];
+      const tipoContratoLabels = ordenFijo.filter(label => tipoContratoMap[label] !== undefined);
+      const tipoContratoValues = tipoContratoLabels.map(label => tipoContratoMap[label]);
       const tipoContratoColors = tipoContratoLabels.map(label => getColorByContractType(label));
 
       if (window._chart1) window._chart1.destroy();

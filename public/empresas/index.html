@@ -126,12 +126,15 @@
         empresaMap[region].ventas += Number(f.cantidadFacturas) || 0;
       });
 
-      // Ordenar por ingresos (desc)
-      const sorted = Object.entries(empresaMap).sort((a, b) => b[1].ingresos - a[1].ingresos);
+      // Ordenar por orden fijo
+      const ordenFijoEmpresas = ['Argentina', 'España', 'Chile', 'Otros'];
+      const sortedEmpresas = ordenFijoEmpresas
+        .filter(empresa => empresaMap[empresa])
+        .map(empresa => [empresa, empresaMap[empresa]]);
 
-      const labels = sorted.map(([region]) => region);
-      const ingresos = sorted.map(([, data]) => data.ingresos);
-      const ventas = sorted.map(([, data]) => data.ventas);
+      const labels = sortedEmpresas.map(([region]) => region);
+      const ingresos = sortedEmpresas.map(([, data]) => data.ingresos);
+      const ventas = sortedEmpresas.map(([, data]) => data.ventas);
 
       // Calcular totales
       const totalIngresos = ingresos.reduce((s, v) => s + v, 0);
@@ -219,7 +222,7 @@
 
       // Tabla de datos
       const tbody = document.getElementById('tablaEmpresas');
-      tbody.innerHTML = sorted.map(([empresa, data], idx) => `
+      tbody.innerHTML = sortedEmpresas.map(([empresa, data]) => `
         <tr>
           <td><strong>${empresa}</strong></td>
           <td>${formatMoney(data.ingresos)}</td>
