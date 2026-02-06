@@ -106,6 +106,8 @@
     }
 
     function render(d) {
+      const mes = document.getElementById('mes');
+      mes.textContent = '';
       const ctx = document.getElementById('chart').getContext('2d');
       const labels = ['Total ventas', 'Promedio por factura', 'Cantidad facturas'];
       const values = [d.totalVentas, d.promedioPorFactura, d.cantidadFacturas];
