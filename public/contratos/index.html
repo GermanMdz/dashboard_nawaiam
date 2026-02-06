@@ -14,9 +14,12 @@
     .mes-selector select { padding:8px 12px; border:1px solid #e2e8f0; border-radius:4px; font-size:14px; cursor:pointer }
     .section { margin-bottom:32px }
     .section-title { font-weight:600; margin-bottom:12px; color:#0f172a; font-size:14px }
-    .chart-container { position: relative; height: 350px; width: 100%; }
-    .chart-circular-wrapper { max-width: 400px; margin: 0 auto; }
+    .chart-container { position: relative; height: 350px; width: 100%; margin-bottom:32px }
+    .chart-circular-wrapper { max-width: 400px; margin: 0 auto; margin-bottom:32px }
     .chart-circular { position: relative; height: 350px; }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { background: #f1f5f9; padding: 8px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600; font-size: 12px; }
+    .data-table td { padding: 8px; border: 1px solid #e2e8f0; font-size: 14px; }
   </style>
   <script src="../components/nav-bar-custom.js" defer></script>
 </head>
@@ -38,6 +41,16 @@
       <div class="chart-container">
         <canvas id="chartTipoContrato"></canvas>
       </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Tipo de Contrato</th>
+            <th>Total de Ventas</th>
+          </tr>
+        </thead>
+        <tbody id="tablaTipoContrato">
+        </tbody>
+      </table>
     </div>
     
     <div class="section">
@@ -116,6 +129,13 @@
       return COLORS.MARKETPLACE;
     }
 
+    function formatMoney(v) {
+      return new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency: 'ARS'
+      }).format(v);
+    }
+
     async function render(mes) {
       const resultado = await fetchData(mes);
       const contratos = resultado.datos;
@@ -163,6 +183,15 @@
           }
         }
       });
+
+      // Tabla de datos
+      const tbody = document.getElementById('tablaTipoContrato');
+      tbody.innerHTML = tipoContratoLabels.map(label => `
+        <tr>
+          <td><strong>${label}</strong></td>
+          <td>${formatMoney(tipoContratoMap[label])}</td>
+        </tr>
+      `).join('');
 
       // Gráfico circular
       const ctx2 = document.getElementById('chartSegmentacion').getContext('2d');
