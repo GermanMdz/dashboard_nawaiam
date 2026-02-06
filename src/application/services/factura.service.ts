@@ -4,32 +4,63 @@ export class FacturaService {
   constructor(private repository: FacturaRepository) { }
 
   /**
+   * Obtiene el mes actual en formato MM-YYYY
+   */
+  private obtenerMesActual(): string {
+    const hoy = new Date();
+    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+    const año = hoy.getFullYear();
+    return `${mes}-${año}`;
+  }
+
+  /**
+   * Obtiene todos los meses disponibles con facturas
+   */
+  async obtenerMesesDisponibles(): Promise<string[]> {
+    try {
+      const meses = await this.repository.obtenerPorMeses();
+      const mesesOrdenados = Object.keys(meses).sort((a, b) => {
+        const [mesA, añoA] = a.split('-');
+        const [mesB, añoB] = b.split('-');
+        const fechaA = new Date(`${añoA}-${mesA}-01`);
+        const fechaB = new Date(`${añoB}-${mesB}-01`);
+        return fechaB.getTime() - fechaA.getTime(); // Más reciente primero
+      });
+      return mesesOrdenados;
+    } catch (error) {
+      console.error('Error en obtenerMesesDisponibles:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Obtiene el dashboard general con estadísticas del mes actual
    */
-  async obtenerDashboardGeneral(): Promise<{
-    mesActual: string;
+  async obtenerDashboardGeneral(mesEspecifico?: string): Promise<{
+    mes: string;
+    mesFormato: string;
     totalVentas: number;
     cantidadFacturas: number;
     promedioPorFactura: number;
     montoPendiente: number;
   }> {
     try {
-      const hoy = new Date();
-      const mesActual = `${String(hoy.getDate()).padStart(2, '0')}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${hoy.getFullYear()}`;
-
-      // Obtener mes en formato DD-MM-YYYY (ej: "05-01-2026")
-      const [dia, mes, año] = mesActual.split('-');
-      const mesBusqueda = `${mes}-${año}`;
-
-      const facturasMes = await this.repository.obtenerPorMes(mesBusqueda);
+      const mes = mesEspecifico || this.obtenerMesActual();
+      
+      const facturasMes = await this.repository.obtenerPorMes(mes);
 
       const totalVentas = facturasMes.reduce((sum, f) => sum + f.total, 0);
       const cantidadFacturas = facturasMes.length;
       const promedioPorFactura = cantidadFacturas > 0 ? totalVentas / cantidadFacturas : 0;
       const montoPendiente = facturasMes.reduce((sum, f) => sum + f.importePendiente, 0);
 
+      const [mesNum, año] = mes.split('-');
+      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      const mesFormato = `${meses[parseInt(mesNum) - 1]} ${año}`;
+
       return {
-        mesActual: `${mes}/${año}`,
+        mes,
+        mesFormato,
         totalVentas: Math.round(totalVentas * 100) / 100,
         cantidadFacturas,
         promedioPorFactura: Math.round(promedioPorFactura * 100) / 100,
@@ -41,14 +72,22 @@ export class FacturaService {
     }
   }
 
-  async obtenerVentasXProducto(): Promise<{
-    producto: string;
-    totalVentas: number;
-    cantidadFacturas: number;
-    montoPendiente: number;
-  }[]> {
+  /**
+   * Obtiene ventas por producto para un mes específico
+   */
+  async obtenerVentasXProducto(mesEspecifico?: string): Promise<{
+    mes: string;
+    mesFormato: string;
+    datos: {
+      producto: string;
+      totalVentas: number;
+      cantidadFacturas: number;
+      montoPendiente: number;
+    }[]
+  }> {
     try {
-      const facturas = await this.repository.obtenerTodas();
+      const mes = mesEspecifico || this.obtenerMesActual();
+      const facturas = await this.repository.obtenerPorMes(mes);
 
       const map = new Map<
         string,
@@ -72,25 +111,41 @@ export class FacturaService {
         acc.montoPendiente += f.importePendiente || 0;
       }
 
-      return Array.from(map.entries()).map(([producto, data]) => ({
-        producto,
-        totalVentas: Math.round(data.totalVentas * 100) / 100,
-        cantidadFacturas: data.cantidadFacturas,
-        montoPendiente: Math.round(data.montoPendiente * 100) / 100,
-      }));
+      const [mesNum, año] = mes.split('-');
+      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      const mesFormato = `${meses[parseInt(mesNum) - 1]} ${año}`;
+
+      return {
+        mes,
+        mesFormato,
+        datos: Array.from(map.entries()).map(([producto, data]) => ({
+          producto,
+          totalVentas: Math.round(data.totalVentas * 100) / 100,
+          cantidadFacturas: data.cantidadFacturas,
+          montoPendiente: Math.round(data.montoPendiente * 100) / 100,
+        }))
+      };
     } catch (error) {
       console.error('Error en obtenerVentasXProducto', error);
       throw error;
     }
   }
 
-  async obtenerRankingVendedores(): Promise<{
-    vendedor: string;
-    cantidadVentas: number;
-    ingresos: number;
-  }[]> {
+  /**
+   * Obtiene ranking de vendedores para un mes específico
+   */
+  async obtenerRankingVendedores(mesEspecifico?: string): Promise<{
+    mes: string;
+    mesFormato: string;
+    datos: {
+      vendedor: string;
+      cantidadVentas: number;
+      ingresos: number;
+    }[]
+  }> {
     try {
-      const facturas = await this.repository.obtenerTodas();
+      const mes = mesEspecifico || this.obtenerMesActual();
+      const facturas = await this.repository.obtenerPorMes(mes);
 
       const map = new Map<
         string,
@@ -109,24 +164,40 @@ export class FacturaService {
         acc.ingresos += f.total;
       }
 
-      return Array.from(map.entries()).map(([vendedor, data]) => ({
-        vendedor,
-        cantidadVentas: data.cantidadVentas,
-        ingresos: Math.round(data.ingresos * 100) / 100,
-      }));
+      const [mesNum, año] = mes.split('-');
+      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      const mesFormato = `${meses[parseInt(mesNum) - 1]} ${año}`;
+
+      return {
+        mes,
+        mesFormato,
+        datos: Array.from(map.entries()).map(([vendedor, data]) => ({
+          vendedor,
+          cantidadVentas: data.cantidadVentas,
+          ingresos: Math.round(data.ingresos * 100) / 100,
+        }))
+      };
     } catch (error) {
       console.error('Error en obtenerRankingVendedores', error);
       throw error;
     }
   }
 
-  async obtenerContratos(): Promise<{
-    numeroContrato: string;
-    cantidad: number;
-    totalVentas: number;
-  }[]> {
+  /**
+   * Obtiene contratos para un mes específico
+   */
+  async obtenerContratos(mesEspecifico?: string): Promise<{
+    mes: string;
+    mesFormato: string;
+    datos: {
+      numeroContrato: string;
+      cantidad: number;
+      totalVentas: number;
+    }[]
+  }> {
     try {
-      const facturas = await this.repository.obtenerTodas();
+      const mes = mesEspecifico || this.obtenerMesActual();
+      const facturas = await this.repository.obtenerPorMes(mes);
 
       const contratos: { [key: string]: { cantidad: number; totalVentas: number } } = {};
 
@@ -141,24 +212,40 @@ export class FacturaService {
         contratos[numeroContrato].totalVentas += f.total;
       }
 
-      return Object.entries(contratos).map(([numeroContrato, data]) => ({
-        numeroContrato,
-        cantidad: data.cantidad,
-        totalVentas: Math.round(data.totalVentas * 100) / 100,
-      }));
+      const [mesNum, año] = mes.split('-');
+      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      const mesFormato = `${meses[parseInt(mesNum) - 1]} ${año}`;
+
+      return {
+        mes,
+        mesFormato,
+        datos: Object.entries(contratos).map(([numeroContrato, data]) => ({
+          numeroContrato,
+          cantidad: data.cantidad,
+          totalVentas: Math.round(data.totalVentas * 100) / 100,
+        }))
+      };
     } catch (error) {
       console.error('Error en obtenerContratos', error);
       throw error;
     }
   }
 
-  async obtenerEmpresas(): Promise<{
-    empresa: string;
-    cantidadFacturas: number;
-    totalVentas: number;
-  }[]> {
+  /**
+   * Obtiene empresas para un mes específico
+   */
+  async obtenerEmpresas(mesEspecifico?: string): Promise<{
+    mes: string;
+    mesFormato: string;
+    datos: {
+      empresa: string;
+      cantidadFacturas: number;
+      totalVentas: number;
+    }[]
+  }> {
     try {
-      const facturas = await this.repository.obtenerTodas();
+      const mes = mesEspecifico || this.obtenerMesActual();
+      const facturas = await this.repository.obtenerPorMes(mes);
 
       const empresas: { [key: string]: { cantidadFacturas: number; totalVentas: number } } = {};
 
@@ -173,11 +260,19 @@ export class FacturaService {
         empresas[empresa].totalVentas += f.total;
       }
 
-      return Object.entries(empresas).map(([empresa, data]) => ({
-        empresa,
-        cantidadFacturas: data.cantidadFacturas,
-        totalVentas: Math.round(data.totalVentas * 100) / 100,
-      }));
+      const [mesNum, año] = mes.split('-');
+      const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      const mesFormato = `${meses[parseInt(mesNum) - 1]} ${año}`;
+
+      return {
+        mes,
+        mesFormato,
+        datos: Object.entries(empresas).map(([empresa, data]) => ({
+          empresa,
+          cantidadFacturas: data.cantidadFacturas,
+          totalVentas: Math.round(data.totalVentas * 100) / 100,
+        }))
+      };
     } catch (error) {
       console.error('Error en obtenerEmpresas', error);
       throw error;

@@ -4,8 +4,8 @@ import { Redis } from '@upstash/redis';
 
 export class FacturaRepository {
   private redis: Redis;
-  private readonly CACHE_KEY = 'facturas:todas';
-  private readonly CACHE_TTL = 3600;
+  private readonly CACHE_KEY = 'facturas:anio';
+  private readonly CACHE_TTL = 3600; // 1 hora
 
   constructor(private http: FinnegansHttp) {
     this.redis = new Redis({
@@ -14,21 +14,27 @@ export class FacturaRepository {
     });
   }
 
+  /**
+   * Obtiene todas las facturas del año actual
+   * Solicita datos con parámetros de fecha para optimizar el costo de API
+   */
   async obtenerTodas(): Promise<Factura[]> {
     try {
-      // Intentar obtener del caché
+      // Intentar obtener del caché primero
       console.log('🔍 Buscando en caché...');
       const cached = await this.redis.hgetall(this.CACHE_KEY).catch(() => null);
       
       if (cached && Object.keys(cached).length > 0) {
         console.log('📦 Datos desde Redis (caché)');
-        // Redis devuelve un objeto, convertirlo a array de facturas
         return Object.values(cached) as Factura[];
       }
 
-      // Si no hay caché, hacer la petición a la API
-      console.log('🔄 Solicitando datos a Finnegans API...');
-      const datos = await this.http.get<any[]>('/reports/ANAFACTURACION');
+      // Si no hay caché, hacer la petición a la API con parámetros de fecha
+      console.log('📡 Solicitando datos de todo el año a Finnegans API...');
+      const datos = await this.http.get<any[]>('/reports/ANAFACTURACION', {
+        PARAMWEBREPORT_FechaDesde: this.obtenerPrimerDiaDelAño(),
+        PARAMWEBREPORT_FechaHasta: this.obtenerUltimoDiaDelAño(),
+      });
       
       // Normalizar datos
       const facturas = Array.isArray(datos) 
@@ -56,13 +62,42 @@ export class FacturaRepository {
     }
   }
 
+  /**
+   * Obtiene facturas filtradas por mes específico
+   * @param mes formato MM-YYYY (ej: "01-2026")
+   */
   async obtenerPorMes(mes: string): Promise<Factura[]> {
     try {
       const todas = await this.obtenerTodas();
       const fragment = `-${mes}`;
-      return todas.filter(f => f.fecha.includes(fragment));
+      return todas.filter(f => f.mes === mes);
     } catch (error) {
       console.error('Error en FacturaRepository.obtenerPorMes:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene facturas agrupadas por mes
+   * Devuelve un objeto donde la clave es el mes (MM-YYYY) 
+   * y el valor es un array de facturas de ese mes
+   */
+  async obtenerPorMeses(): Promise<Record<string, Factura[]>> {
+    try {
+      const todas = await this.obtenerTodas();
+      
+      const meses: Record<string, Factura[]> = {};
+      
+      todas.forEach(factura => {
+        if (!meses[factura.mes]) {
+          meses[factura.mes] = [];
+        }
+        meses[factura.mes].push(factura);
+      });
+
+      return meses;
+    } catch (error) {
+      console.error('Error en FacturaRepository.obtenerPorMeses:', error);
       throw error;
     }
   }
@@ -72,10 +107,44 @@ export class FacturaRepository {
     console.log('🗑️ Caché invalidado');
   }
 
+  /**
+   * Extrae el mes del formato DD-MM-YYYY a MM-YYYY
+   */
+  private extraerMes(fecha: string): string {
+    // fecha viene como "DD-MM-YYYY"
+    const partes = fecha.split('-');
+    if (partes.length === 3) {
+      return `${partes[1]}-${partes[2]}`; // MM-YYYY
+    }
+    return '';
+  }
+
+  /**
+   * Obtiene el primer día del año actual en formato YYYY-MM-DD
+   */
+  private obtenerPrimerDiaDelAño(): string {
+    const hoy = new Date();
+    const año = hoy.getFullYear();
+    return `${año}-01-01`;
+  }
+
+  /**
+   * Obtiene el último día del año actual en formato YYYY-MM-DD
+   */
+  private obtenerUltimoDiaDelAño(): string {
+    const hoy = new Date();
+    const año = hoy.getFullYear();
+    return `${año}-12-31`;
+  }
+
   private normalizar(data: any): Factura {
+    const fecha = data.FECHA || '';
+    const mes = this.extraerMes(fecha);
+
     return {
       transaccionId: data.TRANSACCIONID?.toString() || '',
-      fecha: data.FECHA || '',
+      fecha: fecha,
+      mes: mes,
       cliente: data.CLIENTE || '',
       vendedor: data.VENDEDOR || '',
       producto: data.PRODUCTO || '',

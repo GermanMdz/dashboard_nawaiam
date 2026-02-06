@@ -5,12 +5,32 @@ export class FacturaController {
   constructor(private service: FacturaService) { }
 
   /**
-   * GET /facturas/dashboard
-   * Obtiene el dashboard general
+   * GET /facturas/meses
+   * Obtiene los meses disponibles
+   */
+  async obtenerMesesDisponibles(req: Request, res: Response): Promise<void> {
+    try {
+      const meses = await this.service.obtenerMesesDisponibles();
+      res.json({
+        success: true,
+        data: meses,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'Error obteniendo meses disponibles',
+      });
+    }
+  }
+
+  /**
+   * GET /facturas/dashboardGeneral?mes=MM-YYYY
+   * Obtiene el dashboard general (mes actual si no se especifica)
    */
   async obtenerDashboardGeneral(req: Request, res: Response): Promise<void> {
     try {
-      const dashboard = await this.service.obtenerDashboardGeneral();
+      const mes = req.query.mes as string | undefined;
+      const dashboard = await this.service.obtenerDashboardGeneral(mes);
       res.json({
         success: true,
         data: dashboard,
@@ -23,12 +43,16 @@ export class FacturaController {
     }
   }
 
+  /**
+   * GET /facturas/ventas-por-producto?mes=MM-YYYY
+   */
   async obtenerVentasXProducto(req: Request, res: Response): Promise<void> {
     try {
-      const dashboard = await this.service.obtenerVentasXProducto();
+      const mes = req.query.mes as string | undefined;
+      const resultado = await this.service.obtenerVentasXProducto(mes);
       res.json({
         success: true,
-        data: dashboard,
+        data: resultado,
       });
     } catch (error) {
       res.status(500).json({
@@ -38,12 +62,16 @@ export class FacturaController {
     }
   }
 
+  /**
+   * GET /facturas/ranking-vendedores?mes=MM-YYYY
+   */
   async obtenerRankingVendedores(req: Request, res: Response): Promise<void> {
     try {
-      const dashboard = await this.service.obtenerRankingVendedores();
+      const mes = req.query.mes as string | undefined;
+      const resultado = await this.service.obtenerRankingVendedores(mes);
       res.json({
         success: true,
-        data: dashboard,
+        data: resultado,
       });
     } catch (error) {
       res.status(500).json({
@@ -53,12 +81,16 @@ export class FacturaController {
     }
   }
 
+  /**
+   * GET /facturas/contratos?mes=MM-YYYY
+   */
   async obtenerContratos(req: Request, res: Response): Promise<void> {
     try {
-      const dashboard = await this.service.obtenerContratos();
+      const mes = req.query.mes as string | undefined;
+      const resultado = await this.service.obtenerContratos(mes);
       res.json({
         success: true,
-        data: dashboard,
+        data: resultado,
       });
     } catch (error) {
       res.status(500).json({
@@ -68,12 +100,16 @@ export class FacturaController {
     }
   }
 
+  /**
+   * GET /facturas/empresas?mes=MM-YYYY
+   */
   async obtenerEmpresas(req: Request, res: Response): Promise<void> {
     try {
-      const dashboard = await this.service.obtenerEmpresas();
+      const mes = req.query.mes as string | undefined;
+      const resultado = await this.service.obtenerEmpresas(mes);
       res.json({
         success: true,
-        data: dashboard,
+        data: resultado,
       });
     } catch (error) {
       res.status(500).json({

@@ -47,7 +47,7 @@ export class FinnegansHttp {
     const url = `https://api.teamplace.finneg.com/api/oauth/token?grant_type=client_credentials&client_id=${this.clientId}&client_secret=${this.clientSecret}`;
 
     try {
-      console.log('🔄 Solicitando nuevo token de Finnegans...');
+      console.log('📄 Solicitando nuevo token de Finnegans...');
       
       // ✅ Usar fetch con response.text() como funcionaba antes
       const response = await fetch(url, { method: 'GET' });
@@ -69,7 +69,7 @@ export class FinnegansHttp {
       this.tokenExpiry = Date.now() + (expiresIn * 1000) - 60000; // renovar 1 min antes
       
       console.log(`✅ Token obtenido exitosamente (expira en ~${expiresIn / 60} min)`);
-      console.log(`📋 Token: ${this.token.substring(0, 20)}...`);
+      console.log(`🔑 Token: ${this.token.substring(0, 20)}...`);
       this.retryCount = 0;
 
     } catch (error) {
@@ -79,7 +79,7 @@ export class FinnegansHttp {
       if (this.retryCount < this.maxRetries) {
         this.retryCount++;
         const waitTime = 2000 * this.retryCount; // backoff exponencial
-        console.log(`🔄 Reintentando en ${waitTime}ms... (${this.retryCount}/${this.maxRetries})`);
+        console.log(`📡 Reintentando en ${waitTime}ms... (${this.retryCount}/${this.maxRetries})`);
         await new Promise(r => setTimeout(r, waitTime));
         return this._fetchTokenInternal();
       }
@@ -100,7 +100,7 @@ export class FinnegansHttp {
     }
   }
 
-  async get<T>(endpoint: string): Promise<T> {
+  async get<T>(endpoint: string, additionalParams?: Record<string, any>): Promise<T> {
     let lastError: Error | null = null;
 
     // Intentar hasta maxRetries veces
@@ -114,6 +114,7 @@ export class FinnegansHttp {
 
         const params: Record<string, any> = {
           ACCESS_TOKEN: this.token,
+          ...additionalParams, // Agregar parámetros adicionales como fechas
         };
 
         console.log(`📡 GET ${endpoint} (intento ${attempt}/${this.maxRetries})`);
@@ -127,7 +128,7 @@ export class FinnegansHttp {
 
         // Si es error 401 (Unauthorized), invalidar token y reintentar
         if (axios.isAxiosError(error) && error.response?.status === 401) {
-          console.log('🔄 Token inválido (401), invalidando y reintentando...');
+          console.log('📡 Token inválido (401), invalidando y reintentando...');
           this.token = null;
           this.tokenExpiry = null;
           this.retryCount = 0;

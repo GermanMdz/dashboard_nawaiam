@@ -13,6 +13,7 @@ export function createFacturaRoutes(http: FinnegansHttp): Router {
   const controller = new FacturaController(service);
 
   // Rutas
+  router.get('/meses', (req, res) => controller.obtenerMesesDisponibles(req, res));
   router.get('/dashboardGeneral', (req, res) => controller.obtenerDashboardGeneral(req, res));
   router.get('/ventas-por-producto', (req, res) => controller.obtenerVentasXProducto(req, res));
   router.get('/ranking-vendedores', (req, res) => controller.obtenerRankingVendedores(req, res));
