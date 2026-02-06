@@ -90,7 +90,7 @@
       );
 
       document.getElementById('total').textContent =
-        `${resultado.mesFormato} - Total vendido: ${formatMoney(totalGeneral)}`;
+        `Total vendido: ${formatMoney(totalGeneral)}`;
 
       const labels = data.map(d => d.producto);
       const ventas = data.map(d => d.totalVentas);

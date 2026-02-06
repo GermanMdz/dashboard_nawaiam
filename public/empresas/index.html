@@ -141,7 +141,7 @@
       const totalVentas = ventas.reduce((s, v) => s + v, 0);
 
       document.getElementById('total').textContent =
-        `${resultado.mesFormato} - Ingresos totales: ${formatMoney(totalIngresos)} · Ventas: ${totalVentas}`;
+        `Ingresos totales: ${formatMoney(totalIngresos)} · Ventas: ${totalVentas}`;
 
       const ventasPercentage = totalVentas
         ? ventas.map(v => (v / totalVentas) * 100)

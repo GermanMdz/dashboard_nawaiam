@@ -88,7 +88,7 @@
       const totalVentas = data.reduce((s, d) => s + d.cantidadVentas, 0);
 
       document.getElementById('total').textContent =
-        `${resultado.mesFormato} - Ingresos totales: ${formatMoney(totalIngresos)} · Ventas: ${totalVentas}`;
+        `Ingresos totales: ${formatMoney(totalIngresos)} · Ventas: ${totalVentas}`;
 
       const labels = data.map(d => d.vendedor);
       const ingresos = data.map(d => d.ingresos);
