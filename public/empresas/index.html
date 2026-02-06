@@ -8,6 +8,9 @@
     body { font-family: system-ui, Arial; background:#f7fafc; padding:24px }
     .card { max-width:1000px; margin:auto; background:#fff; padding:20px; border-radius:8px }
     h1 { margin-bottom:4px }
+    .mes-selector { margin-bottom:24px; display:flex; gap:12px; align-items:center }
+    .mes-selector label { font-weight:600; font-size:14px }
+    .mes-selector select { padding:8px 12px; border:1px solid #e2e8f0; border-radius:4px; font-size:14px; cursor:pointer }
     .total { font-size:16px; font-weight:600; margin-bottom:16px }
     canvas { max-width:100%; height:420px }
   </style>
@@ -17,14 +20,53 @@
   <nav-bar-custom></nav-bar-custom>
   <div class="card">
     <h1>Empresas</h1>
+    
+    <div class="mes-selector">
+      <label for="mesSelect">Seleccionar mes:</label>
+      <select id="mesSelect">
+        <option value="">Cargando meses...</option>
+      </select>
+    </div>
+
     <div id="total" class="total">Cargando...</div>
     <canvas id="chart"></canvas>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    async function fetchData() {
-      const res = await fetch('/facturas/empresas');
+    let mesesDisponibles = [];
+
+    async function cargarMeses() {
+      try {
+        const res = await fetch('/facturas/meses');
+        const json = await res.json();
+        mesesDisponibles = json.data || [];
+        
+        const select = document.getElementById('mesSelect');
+        select.innerHTML = '';
+        
+        mesesDisponibles.forEach(mes => {
+          const option = document.createElement('option');
+          option.value = mes;
+          const [mesNum, año] = mes.split('-');
+          const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+          option.textContent = `${meses[parseInt(mesNum) - 1]} ${año}`;
+          select.appendChild(option);
+        });
+        
+        if (mesesDisponibles.length > 0) {
+          select.value = mesesDisponibles[0];
+        }
+      } catch (e) {
+        console.error('Error cargando meses:', e);
+      }
+    }
+
+    async function fetchData(mes) {
+      const url = mes 
+        ? `/facturas/empresas?mes=${mes}`
+        : '/facturas/empresas';
+      const res = await fetch(url);
       const json = await res.json();
       return json.data;
     }
@@ -50,26 +92,21 @@
       }).format(v);
     }
 
-    async function render() {
-      let facturas = await fetchData();
+    async function render(mes) {
+      const resultado = await fetchData(mes);
+      const facturas = resultado.datos;
 
       const empresaMap = {};
 
       facturas.forEach(f => {
-        // Soporta dos formas de respuesta:
-        // 1) Agregada desde backend: { empresa, cantidadFacturas, totalVentas }
-        // 2) Cruda por factura: { EMPRESA, TOTAL, ... }
-        const region = mapEmpresa(f.empresa ?? f.EMPRESA ?? '');
+        const region = mapEmpresa(f.empresa);
 
         if (!empresaMap[region]) {
           empresaMap[region] = { ingresos: 0, ventas: 0 };
         }
 
-        const ingresosItem = Number(f.total ?? f.totalVentas ?? f.TOTAL ?? f.TOTALBRUTO ?? f.IMPORTE ?? 0);
-        const ventasItem = Number(f.cantidadFacturas ?? f.ventas ?? 1);
-
-        empresaMap[region].ingresos += Number.isNaN(ingresosItem) ? 0 : ingresosItem;
-        empresaMap[region].ventas += Number.isNaN(ventasItem) ? 0 : ventasItem;
+        empresaMap[region].ingresos += Number(f.totalVentas) || 0;
+        empresaMap[region].ventas += Number(f.cantidadFacturas) || 0;
       });
 
       // Ordenar por ingresos (desc)
@@ -84,16 +121,17 @@
       const totalVentas = ventas.reduce((s, v) => s + v, 0);
 
       document.getElementById('total').textContent =
-        `Ingresos totales: ${formatMoney(totalIngresos)} · Ventas: ${totalVentas}`;
+        `${resultado.mesFormato} - Ingresos totales: ${formatMoney(totalIngresos)} · Ventas: ${totalVentas}`;
 
-      // Convertir ventas a porcentajes (proteger división por cero)
       const ventasPercentage = totalVentas
         ? ventas.map(v => (v / totalVentas) * 100)
         : ventas.map(() => 0);
 
       const ctx = document.getElementById('chart').getContext('2d');
 
-      new Chart(ctx, {
+      if (window._chart) window._chart.destroy();
+
+      window._chart = new Chart(ctx, {
         type: 'bar',
         data: {
           labels,
@@ -163,7 +201,16 @@
       });
     }
 
-    render();
+    (async () => {
+      await cargarMeses();
+      const mesSelect = document.getElementById('mesSelect');
+      
+      await render(mesSelect.value);
+
+      mesSelect.addEventListener('change', async (e) => {
+        await render(e.target.value);
+      });
+    })();
   </script>
 </body>
 </html>

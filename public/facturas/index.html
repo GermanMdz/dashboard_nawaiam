@@ -9,12 +9,16 @@
     .card { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(2,6,23,0.06) }
     h1 { margin-bottom:12px; font-size:20px }
     .subtitle { color:#64748b; margin-bottom:24px; font-size:13px }
+    .mes-selector { margin-bottom:24px; display:flex; gap:12px; align-items:center }
+    .mes-selector label { font-weight:600; font-size:14px }
+    .mes-selector select { padding:8px 12px; border:1px solid #e2e8f0; border-radius:4px; font-size:14px; cursor:pointer }
     canvas { max-width:100%; height:400px }
     .demo-data { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
     .demo-data h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
     .demo-data table { width: 100%; border-collapse: collapse; }
     .demo-data th { background: #f1f5f9; padding: 8px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600; font-size: 12px; }
     .demo-data td { padding: 8px; border: 1px solid #e2e8f0; font-size: 14px; }
+    .loading { text-align:center; padding:20px; color:#64748b }
   </style>
   <script src="../components/nav-bar-custom.js" defer></script>
 </head>
@@ -22,12 +26,19 @@
   <nav-bar-custom></nav-bar-custom>
   <div class="card">
     <h1>Dashboard General</h1>
+    
+    <div class="mes-selector">
+      <label for="mesSelect">Seleccionar mes:</label>
+      <select id="mesSelect">
+        <option value="">Cargando meses...</option>
+      </select>
+    </div>
+
     <div class="subtitle" id="mes">Cargando...</div>
     
     <canvas id="chart"></canvas>
 
     <div class="demo-data">
-      <!-- <h3>Resumen del Mes</h3> -->
       <table>
         <thead>
           <tr>
@@ -43,9 +54,41 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    async function fetchDashboard() {
+    let mesesDisponibles = [];
+
+    async function cargarMeses() {
       try {
-        const res = await fetch('/facturas/dashboardGeneral');
+        const res = await fetch('/facturas/meses');
+        const json = await res.json();
+        mesesDisponibles = json.data || [];
+        
+        const select = document.getElementById('mesSelect');
+        select.innerHTML = '';
+        
+        mesesDisponibles.forEach(mes => {
+          const option = document.createElement('option');
+          option.value = mes;
+          const [mesNum, año] = mes.split('-');
+          const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+          option.textContent = `${meses[parseInt(mesNum) - 1]} ${año}`;
+          select.appendChild(option);
+        });
+        
+        // Seleccionar el primer mes (más reciente)
+        if (mesesDisponibles.length > 0) {
+          select.value = mesesDisponibles[0];
+        }
+      } catch (e) {
+        console.error('Error cargando meses:', e);
+      }
+    }
+
+    async function fetchDashboard(mes) {
+      try {
+        const url = mes 
+          ? `/facturas/dashboardGeneral?mes=${mes}`
+          : '/facturas/dashboardGeneral';
+        const res = await fetch(url);
         if (!res.ok) throw new Error('Error fetching');
         const json = await res.json();
         return json.data;
@@ -64,7 +107,7 @@
 
     function render(d) {
       const mes = document.getElementById('mes');
-      mes.textContent = 'Mes: ' + (d.mesActual || '—');
+      mes.textContent = 'Mes: ' + (d.mesFormato || '–');
 
       const ctx = document.getElementById('chart').getContext('2d');
       const labels = ['Total ventas', 'Promedio por factura', 'Cantidad facturas'];
@@ -127,17 +170,33 @@
           <td><strong>Cantidad de Facturas</strong></td>
           <td>${d.cantidadFacturas}</td>
         </tr>
-        
+        <tr>
+          <td><strong>Monto Pendiente</strong></td>
+          <td>${formatMoney(d.montoPendiente)}</td>
+        </tr>
       `;
     }
 
     (async () => {
-      const data = await fetchDashboard();
+      await cargarMeses();
+      const mesSelect = document.getElementById('mesSelect');
+      
+      // Cargar datos del mes seleccionado inicialmente
+      const data = await fetchDashboard(mesSelect.value);
       if (!data) {
         document.getElementById('mes').textContent = 'Error cargando datos';
         return;
       }
       render(data);
+
+      // Listener para cambios de mes
+      mesSelect.addEventListener('change', async (e) => {
+        const mesSeleccionado = e.target.value;
+        const newData = await fetchDashboard(mesSeleccionado);
+        if (newData) {
+          render(newData);
+        }
+      });
     })();
   </script>
 </body>

@@ -8,6 +8,9 @@
     body { font-family: system-ui, Arial; background:#f7fafc; padding:24px }
     .card { max-width:1000px; margin:auto; background:#fff; padding:20px; border-radius:8px }
     h1 { margin-bottom:4px }
+    .mes-selector { margin-bottom:24px; display:flex; gap:12px; align-items:center }
+    .mes-selector label { font-weight:600; font-size:14px }
+    .mes-selector select { padding:8px 12px; border:1px solid #e2e8f0; border-radius:4px; font-size:14px; cursor:pointer }
     .total { font-size:16px; font-weight:600; margin-bottom:16px }
     canvas { max-width:100%; height:420px }
   </style>
@@ -17,14 +20,53 @@
   <nav-bar-custom></nav-bar-custom>
   <div class="card">
     <h1>Ranking de vendedores</h1>
+    
+    <div class="mes-selector">
+      <label for="mesSelect">Seleccionar mes:</label>
+      <select id="mesSelect">
+        <option value="">Cargando meses...</option>
+      </select>
+    </div>
+
     <div id="total" class="total">Cargando...</div>
     <canvas id="chart"></canvas>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    async function fetchData() {
-      const res = await fetch('/facturas/ranking-vendedores');
+    let mesesDisponibles = [];
+
+    async function cargarMeses() {
+      try {
+        const res = await fetch('/facturas/meses');
+        const json = await res.json();
+        mesesDisponibles = json.data || [];
+        
+        const select = document.getElementById('mesSelect');
+        select.innerHTML = '';
+        
+        mesesDisponibles.forEach(mes => {
+          const option = document.createElement('option');
+          option.value = mes;
+          const [mesNum, año] = mes.split('-');
+          const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+          option.textContent = `${meses[parseInt(mesNum) - 1]} ${año}`;
+          select.appendChild(option);
+        });
+        
+        if (mesesDisponibles.length > 0) {
+          select.value = mesesDisponibles[0];
+        }
+      } catch (e) {
+        console.error('Error cargando meses:', e);
+      }
+    }
+
+    async function fetchData(mes) {
+      const url = mes 
+        ? `/facturas/ranking-vendedores?mes=${mes}`
+        : '/facturas/ranking-vendedores';
+      const res = await fetch(url);
       const json = await res.json();
       return json.data;
     }
@@ -36,31 +78,31 @@
       }).format(v);
     }
 
-    async function render() {
-      let data = await fetchData();
+    async function render(mes) {
+      let resultado = await fetchData(mes);
+      let data = resultado.datos;
 
-      // 🔹 ordenar por ingresos (desc)
       data.sort((a, b) => b.ingresos - a.ingresos);
 
-      // 🔹 totales generales
       const totalIngresos = data.reduce((s, d) => s + d.ingresos, 0);
       const totalVentas = data.reduce((s, d) => s + d.cantidadVentas, 0);
 
       document.getElementById('total').textContent =
-        `Ingresos totales: ${formatMoney(totalIngresos)} · Ventas: ${totalVentas}`;
+        `${resultado.mesFormato} - Ingresos totales: ${formatMoney(totalIngresos)} · Ventas: ${totalVentas}`;
 
       const labels = data.map(d => d.vendedor);
       const ingresos = data.map(d => d.ingresos);
       const ventas = data.map(d => d.cantidadVentas);
 
-      // 🔹 Normalizar ventas a la escala de ingresos
       const maxVentas = Math.max(...ventas);
       const maxIngresos = Math.max(...ingresos);
       const ventasEscaladas = ventas.map(v => (v / maxVentas) * maxIngresos);
 
       const ctx = document.getElementById('chart').getContext('2d');
 
-      new Chart(ctx, {
+      if (window._chart) window._chart.destroy();
+
+      window._chart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels,
@@ -112,10 +154,18 @@
             }
         }
         });
-
     }
 
-    render();
+    (async () => {
+      await cargarMeses();
+      const mesSelect = document.getElementById('mesSelect');
+      
+      await render(mesSelect.value);
+
+      mesSelect.addEventListener('change', async (e) => {
+        await render(e.target.value);
+      });
+    })();
   </script>
 </body>
 </html>

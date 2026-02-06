@@ -9,6 +9,9 @@
     .card { max-width:900px; margin:auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(2,6,23,0.06) }
     h1 { margin-bottom:12px; font-size:20px }
     .subtitle { color:#64748b; margin-bottom:24px; font-size:13px }
+    .mes-selector { margin-bottom:24px; display:flex; gap:12px; align-items:center }
+    .mes-selector label { font-weight:600; font-size:14px }
+    .mes-selector select { padding:8px 12px; border:1px solid #e2e8f0; border-radius:4px; font-size:14px; cursor:pointer }
     .section { margin-bottom:32px }
     .section-title { font-weight:600; margin-bottom:12px; color:#0f172a; font-size:14px }
     .chart-container { position: relative; height: 350px; width: 100%; }
@@ -22,6 +25,13 @@
   <div class="card">
     <h1>Contratos</h1>
     <div class="subtitle">Análisis de tipos de contrato y segmentación de ventas</div>
+    
+    <div class="mes-selector">
+      <label for="mesSelect">Seleccionar mes:</label>
+      <select id="mesSelect">
+        <option value="">Cargando meses...</option>
+      </select>
+    </div>
     
     <div class="section">
       <div class="section-title">Tipo de Contrato</div>
@@ -42,10 +52,46 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // ✅ Colores consistentes
+    let mesesDisponibles = [];
+
+    async function cargarMeses() {
+      try {
+        const res = await fetch('/facturas/meses');
+        const json = await res.json();
+        mesesDisponibles = json.data || [];
+        
+        const select = document.getElementById('mesSelect');
+        select.innerHTML = '';
+        
+        mesesDisponibles.forEach(mes => {
+          const option = document.createElement('option');
+          option.value = mes;
+          const [mesNum, año] = mes.split('-');
+          const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+          option.textContent = `${meses[parseInt(mesNum) - 1]} ${año}`;
+          select.appendChild(option);
+        });
+        
+        if (mesesDisponibles.length > 0) {
+          select.value = mesesDisponibles[0];
+        }
+      } catch (e) {
+        console.error('Error cargando meses:', e);
+      }
+    }
+
+    async function fetchData(mes) {
+      const url = mes 
+        ? `/facturas/contratos?mes=${mes}`
+        : '/facturas/contratos';
+      const res = await fetch(url);
+      const json = await res.json();
+      return json.data;
+    }
+
     const COLORS = {
-      B2B: '#0ea5a4',           // Teal (Nuevos y Recompra)
-      MARKETPLACE: '#f97316'     // Orange (Otros)
+      B2B: '#0ea5a4',
+      MARKETPLACE: '#f97316'
     };
 
     function mapContractType(numeroContrato) {
@@ -54,7 +100,7 @@
         case '0001': return 'Nuevos';
         case '0002': return 'Recompra';
         case 'orientación vocacional': return 'Orientación Vocacional';
-        case 'conocete': return 'Conócete';
+        case 'conócete': return 'Conócete';
         default: return 'Otros';
       }
     }
@@ -64,23 +110,20 @@
     }
 
     function getColorByContractType(tipoContrato) {
-      // Nuevos y Recompra = B2B color
       if (tipoContrato === 'Nuevos' || tipoContrato === 'Recompra') {
         return COLORS.B2B;
       }
-      // El resto = Marketplace color
       return COLORS.MARKETPLACE;
     }
 
-    async function render() {
-      const res = await fetch('/facturas/contratos');
-      const contratos = await res.json();
-      const data = contratos.data;
+    async function render(mes) {
+      const resultado = await fetchData(mes);
+      const contratos = resultado.datos;
 
       const tipoContratoMap = {};
       const segmentacionMap = { 'B2B': 0, 'Marketplace': 0 };
 
-      data.forEach(c => {
+      contratos.forEach(c => {
         const tipoContrato = mapContractType(c.numeroContrato);
         const segmentacion = getSegmentationType(c.numeroContrato);
         
@@ -92,20 +135,22 @@
         segmentacionMap[segmentacion] += c.cantidad;
       });
 
-      // ✅ Gráfico barras - Total de ventas por tipo de contrato CON COLORES CONSISTENTES
+      // Gráfico barras
       const ctx1 = document.getElementById('chartTipoContrato').getContext('2d');
       const tipoContratoLabels = Object.keys(tipoContratoMap);
       const tipoContratoValues = Object.values(tipoContratoMap);
       const tipoContratoColors = tipoContratoLabels.map(label => getColorByContractType(label));
 
-      new Chart(ctx1, {
+      if (window._chart1) window._chart1.destroy();
+
+      window._chart1 = new Chart(ctx1, {
         type: 'bar',
         data: {
           labels: tipoContratoLabels,
           datasets: [{ 
             label: 'Total de ventas', 
             data: tipoContratoValues, 
-            backgroundColor: tipoContratoColors  // ✅ Colores por tipo
+            backgroundColor: tipoContratoColors
           }]
         },
         options: {
@@ -119,15 +164,17 @@
         }
       });
 
-      // ✅ Gráfico circular - Segmentación B2B vs Marketplace
+      // Gráfico circular
       const ctx2 = document.getElementById('chartSegmentacion').getContext('2d');
-      new Chart(ctx2, {
+      if (window._chart2) window._chart2.destroy();
+
+      window._chart2 = new Chart(ctx2, {
         type: 'doughnut',
         data: {
           labels: Object.keys(segmentacionMap),
           datasets: [{ 
             data: Object.values(segmentacionMap), 
-            backgroundColor: [COLORS.B2B, COLORS.MARKETPLACE]  // ✅ Colores consistentes
+            backgroundColor: [COLORS.B2B, COLORS.MARKETPLACE]
           }]
         },
         options: {
@@ -141,7 +188,16 @@
       });
     }
 
-    render();
+    (async () => {
+      await cargarMeses();
+      const mesSelect = document.getElementById('mesSelect');
+      
+      await render(mesSelect.value);
+
+      mesSelect.addEventListener('change', async (e) => {
+        await render(e.target.value);
+      });
+    })();
   </script>
 </body>
 </html>
