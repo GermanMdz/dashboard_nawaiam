@@ -20,6 +20,7 @@
     .demo-data td { padding: 8px; border: 1px solid #e2e8f0; font-size: 14px; }
     .loading { text-align:center; padding:20px; color:#64748b }
   </style>
+  <script src="../components/auth.js" defer></script>
   <script src="../components/nav-bar-custom.js" defer></script>
 </head>
 <body>
@@ -54,11 +55,16 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    // Verificar autenticación
+    if (!Auth.isAuthenticated()) {
+      window.location.href = '/login';
+    }
+
     let mesesDisponibles = [];
 
     async function cargarMeses() {
       try {
-        const res = await fetch('/facturas/meses');
+        const res = await Auth.fetch('/facturas/meses');
         const json = await res.json();
         mesesDisponibles = json.data || [];
         
@@ -79,6 +85,10 @@
           select.value = mesesDisponibles[0];
         }
       } catch (e) {
+        if (e.message === 'AUTH_REQUIRED') {
+          window.location.href = '/login';
+          return;
+        }
         console.error('Error cargando meses:', e);
       }
     }
@@ -88,11 +98,15 @@
         const url = mes 
           ? `/facturas/dashboardGeneral?mes=${mes}`
           : '/facturas/dashboardGeneral';
-        const res = await fetch(url);
+        const res = await Auth.fetch(url);
         if (!res.ok) throw new Error('Error fetching');
         const json = await res.json();
         return json.data;
       } catch(e) {
+        if (e.message === 'AUTH_REQUIRED') {
+          window.location.href = '/login';
+          return null;
+        }
         console.error(e);
         return null;
       }

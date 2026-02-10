@@ -14,6 +14,7 @@
     .total { font-size:18px; font-weight:600; margin-bottom:16px }
     canvas { max-width:100%; height:420px }
   </style>
+  <script src="../components/auth.js" defer></script>
   <script src="../components/nav-bar-custom.js" defer></script>
 </head>
 <body>
@@ -34,11 +35,16 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    // Verificar autenticación
+    if (!Auth.isAuthenticated()) {
+      window.location.href = '/login';
+    }
+
     let mesesDisponibles = [];
 
     async function cargarMeses() {
       try {
-        const res = await fetch('/facturas/meses');
+        const res = await Auth.fetch('/facturas/meses');
         const json = await res.json();
         mesesDisponibles = json.data || [];
         
@@ -58,17 +64,30 @@
           select.value = mesesDisponibles[0];
         }
       } catch (e) {
+        if (e.message === 'AUTH_REQUIRED') {
+          window.location.href = '/login';
+          return;
+        }
         console.error('Error cargando meses:', e);
       }
     }
 
     async function fetchData(mes) {
-      const url = mes 
-        ? `/facturas/ventas-por-producto?mes=${mes}`
-        : '/facturas/ventas-por-producto';
-      const res = await fetch(url);
-      const json = await res.json();
-      return json.data;
+      try {
+        const url = mes 
+          ? `/facturas/ventas-por-producto?mes=${mes}`
+          : '/facturas/ventas-por-producto';
+        const res = await Auth.fetch(url);
+        const json = await res.json();
+        return json.data;
+      } catch(e) {
+        if (e.message === 'AUTH_REQUIRED') {
+          window.location.href = '/login';
+          return null;
+        }
+        console.error(e);
+        return null;
+      }
     }
 
     function formatMoney(v) {
@@ -80,6 +99,8 @@
 
     async function render(mes) {
       let resultado = await fetchData(mes);
+      if (!resultado) return;
+
       let data = resultado.datos;
 
       data.sort((a, b) => b.totalVentas - a.totalVentas);

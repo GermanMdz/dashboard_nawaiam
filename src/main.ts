@@ -1,6 +1,9 @@
 import express from 'express';
 import { config } from './infrastructure/config/config';
 import { FinnegansHttp } from './infrastructure/http/finnegans.http';
+import { AuthService } from './application/services/auth.service';
+import { requireAuth } from './infrastructure/middleware/auth.middleware';
+import { createAuthRoutes } from './presentation/routes/auth.routes';
 import { createClienteRoutes } from './presentation/routes/cliente.routes';
 import { createProductoRoutes } from './presentation/routes/producto.routes';
 import { createFacturaRoutes } from './presentation/routes/factura.routes';
@@ -17,10 +20,15 @@ const finnegansHttp = new FinnegansHttp(
   config.finnegans.clientSecret,
 );
 
-// Rutas
-app.use('/clientes', createClienteRoutes(finnegansHttp));
-app.use('/productos', createProductoRoutes(finnegansHttp));
-app.use('/facturas', createFacturaRoutes(finnegansHttp));
+const authService = new AuthService();
+
+// RUTAS SIN PROTECCIÓN (login público)
+app.use('/auth', createAuthRoutes(authService));
+
+// RUTAS PROTEGIDAS (requieren token válido)
+app.use('/clientes', requireAuth(authService), createClienteRoutes(finnegansHttp));
+app.use('/productos', requireAuth(authService), createProductoRoutes(finnegansHttp));
+app.use('/facturas', requireAuth(authService), createFacturaRoutes(finnegansHttp));
 
 // Health check
 app.get('/', (req, res) => {
@@ -55,26 +63,3 @@ if (require.main === module) {
 }
 
 export default app;
-
-// 🔧 CAMBIO MÍNIMO: esperar el async
-(async () => {
-  // const accessToken = await getToken();
-  // console.log('Token obtenido:', accessToken);
-})();
-
-async function getToken(): Promise<string> {
-  const clientId = process.env.FINNEGANS_CLIENT_ID;
-  const clientSecret = process.env.FINNEGANS_CLIENT_SECRET;
-
-  const url = `https://api.teamplace.finneg.com/api/oauth/token?grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`;
-  const options = { method: 'GET' };
-
-  try {
-    const response = await fetch(url, options);
-    const data = await response.text();
-    return data;
-  } catch (error) {
-    console.error('Error obteniendo token:', error);
-    throw error;
-  }
-}

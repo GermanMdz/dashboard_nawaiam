@@ -21,6 +21,7 @@
     .data-table th { background: #f1f5f9; padding: 8px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600; font-size: 12px; }
     .data-table td { padding: 8px; border: 1px solid #e2e8f0; font-size: 14px; }
   </style>
+  <script src="../components/auth.js" defer></script>
   <script src="../components/nav-bar-custom.js" defer></script>
 </head>
 <body>
@@ -63,11 +64,16 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    // Verificar autenticación
+    if (!Auth.isAuthenticated()) {
+      window.location.href = '/login';
+    }
+
     let mesesDisponibles = [];
 
     async function cargarMeses() {
       try {
-        const res = await fetch('/facturas/meses');
+        const res = await Auth.fetch('/facturas/meses');
         const json = await res.json();
         mesesDisponibles = json.data || [];
         
@@ -87,17 +93,30 @@
           select.value = mesesDisponibles[0];
         }
       } catch (e) {
+        if (e.message === 'AUTH_REQUIRED') {
+          window.location.href = '/login';
+          return;
+        }
         console.error('Error cargando meses:', e);
       }
     }
 
     async function fetchData(mes) {
-      const url = mes 
-        ? `/facturas/contratos?mes=${mes}`
-        : '/facturas/contratos';
-      const res = await fetch(url);
-      const json = await res.json();
-      return json.data;
+      try {
+        const url = mes 
+          ? `/facturas/contratos?mes=${mes}`
+          : '/facturas/contratos';
+        const res = await Auth.fetch(url);
+        const json = await res.json();
+        return json.data;
+      } catch(e) {
+        if (e.message === 'AUTH_REQUIRED') {
+          window.location.href = '/login';
+          return null;
+        }
+        console.error(e);
+        return null;
+      }
     }
 
     const COLORS = {
@@ -136,6 +155,8 @@
 
     async function render(mes) {
       const resultado = await fetchData(mes);
+      if (!resultado) return;
+
       const contratos = resultado.datos;
 
       const tipoContratoMap = {};
