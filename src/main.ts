@@ -31,18 +31,18 @@ app.use('/productos', requireAuth(authService), createProductoRoutes(finnegansHt
 app.use('/facturas', requireAuth(authService), createFacturaRoutes(finnegansHttp));
 
 // Health check
-app.get('/', (req, res) => {
-  res.json({
-    message: '✅ API Finnegans funcionando',
-    endpoints: {
-      facturas: '/facturas',
-      productos: '/productos',
-      vendedores: '/vendedores',
-      contratos: '/contratos',
-      empresas: '/empresas',
-    },
-  });
-});
+// app.get('/', (req, res) => {
+//   res.json({
+//     message: '✅ API Finnegans funcionando',
+//     endpoints: {
+//       facturas: '/facturas',
+//       productos: '/productos',
+//       vendedores: '/vendedores',
+//       contratos: '/contratos',
+//       empresas: '/empresas',
+//     },
+//   });
+// });
 
 // Iniciar servidor
 if (require.main === module) {
