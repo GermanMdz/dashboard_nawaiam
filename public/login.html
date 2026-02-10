@@ -123,7 +123,7 @@
         <input
           id="password"
           type="password"
-          placeholder="•••••••••"
+          placeholder="********"
           required
           autocomplete="off"
         />
@@ -155,9 +155,9 @@
       try {
         await Auth.login(password);
         // Redirigir al dashboard principal
-        window.location.href = '/dashboards/general';
+        window.location.href = '/facturas';
       } catch (error) {
-        errorDiv.textContent = '❌ Contraseña incorrecta';
+        errorDiv.textContent = 'Contraseña incorrecta';
         errorDiv.classList.add('show');
         passwordInput.value = '';
         submitBtn.disabled = false;

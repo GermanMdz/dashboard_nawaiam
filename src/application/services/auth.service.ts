@@ -6,21 +6,17 @@ export class AuthService {
   private tokenDurationSeconds: number = 7 * 24 * 60 * 60; // 7 días
 
   constructor() {
-    this.jwtSecret = process.env.JWT_SECRET || 'tu-clave-secreta-cambiar-en-produccion';
+    this.jwtSecret = process.env.JWT_SECRET!;
     
     // Las 3 contraseñas válidas
     this.validPasswords = new Set([
-      process.env.PASSWORD_1 || 'password1',
-      process.env.PASSWORD_2 || 'password2',
-      process.env.PASSWORD_3 || 'password3',
+      process.env.PASSWORD_1!,
+      process.env.PASSWORD_2!,
+      process.env.PASSWORD_3!,
     ]);
 
     if (!process.env.PASSWORD_1 || !process.env.PASSWORD_2 || !process.env.PASSWORD_3) {
-      console.warn('⚠️  Contraseñas por defecto, configura PASSWORD_1, PASSWORD_2, PASSWORD_3 en .env');
-    }
-
-    if (this.jwtSecret === 'tu-clave-secreta-cambiar-en-produccion') {
-      console.warn('⚠️  JWT_SECRET usando valor por defecto, configúralo en .env');
+      console.warn('configura PASSWORD_1, PASSWORD_2, PASSWORD_3 en .env');
     }
   }
 
