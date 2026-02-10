@@ -1,6 +1,7 @@
 {
   "version": 2,
   "routes": [
+    { "src": "^/$", "dest": "/public/login/index.html" },
     { "src": "^/facturas/(.*)$", "dest": "/api/index.ts" },
     { "src": "^/api/(.*)$", "dest": "/api/index.ts" }
   ]
