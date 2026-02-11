@@ -4,7 +4,7 @@ import { Redis } from '@upstash/redis';
 
 export class FacturaRepository {
   private redis: Redis;
-  private readonly CACHE_KEY = 'facturas:anio';
+  private readonly CACHE_KEY = 'facturas:5years';
   private readonly CACHE_TTL = 3600; // 1 hora
 
   constructor(private http: FinnegansHttp) {
@@ -15,7 +15,7 @@ export class FacturaRepository {
   }
 
   /**
-   * Obtiene todas las facturas del año actual
+   * Obtiene todas las facturas de los últimos 5 años (incluyendo el año actual)
    * Solicita datos con parámetros de fecha para optimizar el costo de API
    */
   async obtenerTodas(): Promise<Factura[]> {
@@ -30,9 +30,9 @@ export class FacturaRepository {
       }
 
       // Si no hay caché, hacer la petición a la API con parámetros de fecha
-      console.log('📡 Solicitando datos de todo el año a Finnegans API...');
+      console.log('📡 Solicitando datos de los últimos 5 años a Finnegans API...');
       const datos = await this.http.get<any[]>('/reports/ANAFACTURACION', {
-        PARAMWEBREPORT_FechaDesde: this.obtenerPrimerDiaDelAño(),
+        PARAMWEBREPORT_FechaDesde: this.obtenerPrimerDiaHace5Anos(),
         PARAMWEBREPORT_FechaHasta: this.obtenerUltimoDiaDelAño(),
       });
       
@@ -69,7 +69,6 @@ export class FacturaRepository {
   async obtenerPorMes(mes: string): Promise<Factura[]> {
     try {
       const todas = await this.obtenerTodas();
-      const fragment = `-${mes}`;
       return todas.filter(f => f.mes === mes);
     } catch (error) {
       console.error('Error en FacturaRepository.obtenerPorMes:', error);
@@ -102,6 +101,46 @@ export class FacturaRepository {
     }
   }
 
+  /**
+   * Obtiene facturas agrupadas por año
+   * Devuelve un objeto donde la clave es el año (YYYY)
+   * y el valor es un array de facturas de ese año
+   */
+  async obtenerPorAños(): Promise<Record<string, Factura[]>> {
+    try {
+      const todas = await this.obtenerTodas();
+      
+      const años: Record<string, Factura[]> = {};
+      
+      todas.forEach(factura => {
+        const año = factura.mes.split('-')[1]; // Extraer año de MM-YYYY
+        if (!años[año]) {
+          años[año] = [];
+        }
+        años[año].push(factura);
+      });
+
+      return años;
+    } catch (error) {
+      console.error('Error en FacturaRepository.obtenerPorAños:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene facturas filtradas por año específico
+   * @param año formato YYYY (ej: "2026")
+   */
+  async obtenerPorAño(año: string): Promise<Factura[]> {
+    try {
+      const todas = await this.obtenerTodas();
+      return todas.filter(f => f.mes.endsWith(`-${año}`));
+    } catch (error) {
+      console.error('Error en FacturaRepository.obtenerPorAño:', error);
+      throw error;
+    }
+  }
+
   async invalidarCache(): Promise<void> {
     await this.redis.del(this.CACHE_KEY);
     console.log('🗑️ Caché invalidado');
@@ -120,11 +159,11 @@ export class FacturaRepository {
   }
 
   /**
-   * Obtiene el primer día del año actual en formato YYYY-MM-DD
+   * Obtiene el primer día de hace 5 años en formato YYYY-MM-DD
    */
-  private obtenerPrimerDiaDelAño(): string {
+  private obtenerPrimerDiaHace5Anos(): string {
     const hoy = new Date();
-    const año = hoy.getFullYear();
+    const año = hoy.getFullYear() - 4; // Hace 4 años (más el actual = 5 años)
     return `${año}-01-01`;
   }
 

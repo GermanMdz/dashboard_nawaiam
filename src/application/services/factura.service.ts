@@ -14,19 +14,43 @@ export class FacturaService {
   }
 
   /**
-   * Obtiene todos los meses disponibles con facturas
+   * Obtiene el año actual
    */
-  async obtenerMesesDisponibles(): Promise<string[]> {
+  private obtenerAñoActual(): string {
+    return new Date().getFullYear().toString();
+  }
+
+  /**
+   * Obtiene todos los meses disponibles con facturas del año actual
+   * y los años anteriores completos (últimos 5 años)
+   */
+  async obtenerMesesDisponibles(): Promise<{
+    mesesActual: string[];
+    años: string[];
+  }> {
     try {
       const meses = await this.repository.obtenerPorMeses();
-      const mesesOrdenados = Object.keys(meses).sort((a, b) => {
-        const [mesA, añoA] = a.split('-');
-        const [mesB, añoB] = b.split('-');
-        const fechaA = new Date(`${añoA}-${mesA}-01`);
-        const fechaB = new Date(`${añoB}-${mesB}-01`);
-        return fechaB.getTime() - fechaA.getTime(); // Más reciente primero
-      });
-      return mesesOrdenados;
+      const años = await this.repository.obtenerPorAños();
+      
+      const añoActual = this.obtenerAñoActual();
+
+      // Obtener meses del año actual y ordenarlos (más recientes primero)
+      const mesesActualArray = Object.keys(meses)
+        .filter(m => m.endsWith(`-${añoActual}`))
+        .sort((a, b) => {
+          const [mesA] = a.split('-');
+          const [mesB] = b.split('-');
+          return parseInt(mesB) - parseInt(mesA); // Mayor a menor
+        });
+
+      // Obtener años disponibles y ordenarlos (más recientes primero)
+      const añosDisponibles = Object.keys(años)
+        .sort((a, b) => parseInt(b) - parseInt(a));
+
+      return {
+        mesesActual: mesesActualArray,
+        años: añosDisponibles,
+      };
     } catch (error) {
       console.error('Error en obtenerMesesDisponibles:', error);
       throw error;
@@ -36,31 +60,46 @@ export class FacturaService {
   /**
    * Obtiene el dashboard general con estadísticas del mes actual
    */
-  async obtenerDashboardGeneral(mesEspecifico?: string): Promise<{
+  async obtenerDashboardGeneral(mesEspecifico?: string, añoEspecifico?: string): Promise<{
     mes: string;
     mesFormato: string;
+    tipo: 'mes' | 'año';
     totalVentas: number;
     cantidadFacturas: number;
     promedioPorFactura: number;
     montoPendiente: number;
   }> {
     try {
-      const mes = mesEspecifico || this.obtenerMesActual();
-      
-      const facturasMes = await this.repository.obtenerPorMes(mes);
+      let facturas: any[] = [];
+      let mes: string;
+      let tipo: 'mes' | 'año' = 'mes';
 
-      const totalVentas = facturasMes.reduce((sum, f) => sum + f.total, 0);
-      const cantidadFacturas = facturasMes.length;
+      if (añoEspecifico) {
+        // Si se especifica año, obtener todos los datos del año
+        facturas = await this.repository.obtenerPorAño(añoEspecifico);
+        mes = `01-${añoEspecifico}`; // Solo para extracción de año
+        tipo = 'año';
+      } else {
+        // Si se especifica mes o usar actual
+        mes = mesEspecifico || this.obtenerMesActual();
+        facturas = await this.repository.obtenerPorMes(mes);
+      }
+
+      const totalVentas = facturas.reduce((sum, f) => sum + f.total, 0);
+      const cantidadFacturas = facturas.length;
       const promedioPorFactura = cantidadFacturas > 0 ? totalVentas / cantidadFacturas : 0;
-      const montoPendiente = facturasMes.reduce((sum, f) => sum + f.importePendiente, 0);
+      const montoPendiente = facturas.reduce((sum, f) => sum + f.importePendiente, 0);
 
       const [mesNum, año] = mes.split('-');
       const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const mesFormato = `${meses[parseInt(mesNum) - 1]} ${año}`;
+      const mesFormato = tipo === 'año' 
+        ? año
+        : `${meses[parseInt(mesNum) - 1]} ${año}`;
 
       return {
-        mes,
+        mes: tipo === 'año' ? año : mes,
         mesFormato,
+        tipo,
         totalVentas: Math.round(totalVentas * 100) / 100,
         cantidadFacturas,
         promedioPorFactura: Math.round(promedioPorFactura * 100) / 100,
@@ -73,11 +112,12 @@ export class FacturaService {
   }
 
   /**
-   * Obtiene ventas por producto para un mes específico
+   * Obtiene ventas por producto para un mes específico o año completo
    */
-  async obtenerVentasXProducto(mesEspecifico?: string): Promise<{
+  async obtenerVentasXProducto(mesEspecifico?: string, añoEspecifico?: string): Promise<{
     mes: string;
     mesFormato: string;
+    tipo: 'mes' | 'año';
     datos: {
       producto: string;
       totalVentas: number;
@@ -86,8 +126,18 @@ export class FacturaService {
     }[]
   }> {
     try {
-      const mes = mesEspecifico || this.obtenerMesActual();
-      const facturas = await this.repository.obtenerPorMes(mes);
+      let facturas: any[] = [];
+      let mes: string;
+      let tipo: 'mes' | 'año' = 'mes';
+
+      if (añoEspecifico) {
+        facturas = await this.repository.obtenerPorAño(añoEspecifico);
+        mes = `01-${añoEspecifico}`;
+        tipo = 'año';
+      } else {
+        mes = mesEspecifico || this.obtenerMesActual();
+        facturas = await this.repository.obtenerPorMes(mes);
+      }
 
       const map = new Map<
         string,
@@ -113,11 +163,14 @@ export class FacturaService {
 
       const [mesNum, año] = mes.split('-');
       const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const mesFormato = `${meses[parseInt(mesNum) - 1]} ${año}`;
+      const mesFormato = tipo === 'año'
+        ? año
+        : `${meses[parseInt(mesNum) - 1]} ${año}`;
 
       return {
-        mes,
+        mes: tipo === 'año' ? año : mes,
         mesFormato,
+        tipo,
         datos: Array.from(map.entries()).map(([producto, data]) => ({
           producto,
           totalVentas: Math.round(data.totalVentas * 100) / 100,
@@ -132,11 +185,12 @@ export class FacturaService {
   }
 
   /**
-   * Obtiene ranking de vendedores para un mes específico
+   * Obtiene ranking de vendedores para un mes específico o año completo
    */
-  async obtenerRankingVendedores(mesEspecifico?: string): Promise<{
+  async obtenerRankingVendedores(mesEspecifico?: string, añoEspecifico?: string): Promise<{
     mes: string;
     mesFormato: string;
+    tipo: 'mes' | 'año';
     datos: {
       vendedor: string;
       cantidadVentas: number;
@@ -144,8 +198,18 @@ export class FacturaService {
     }[]
   }> {
     try {
-      const mes = mesEspecifico || this.obtenerMesActual();
-      const facturas = await this.repository.obtenerPorMes(mes);
+      let facturas: any[] = [];
+      let mes: string;
+      let tipo: 'mes' | 'año' = 'mes';
+
+      if (añoEspecifico) {
+        facturas = await this.repository.obtenerPorAño(añoEspecifico);
+        mes = `01-${añoEspecifico}`;
+        tipo = 'año';
+      } else {
+        mes = mesEspecifico || this.obtenerMesActual();
+        facturas = await this.repository.obtenerPorMes(mes);
+      }
 
       const map = new Map<
         string,
@@ -166,11 +230,14 @@ export class FacturaService {
 
       const [mesNum, año] = mes.split('-');
       const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const mesFormato = `${meses[parseInt(mesNum) - 1]} ${año}`;
+      const mesFormato = tipo === 'año'
+        ? año
+        : `${meses[parseInt(mesNum) - 1]} ${año}`;
 
       return {
-        mes,
+        mes: tipo === 'año' ? año : mes,
         mesFormato,
+        tipo,
         datos: Array.from(map.entries()).map(([vendedor, data]) => ({
           vendedor,
           cantidadVentas: data.cantidadVentas,
@@ -184,11 +251,12 @@ export class FacturaService {
   }
 
   /**
-   * Obtiene contratos para un mes específico
+   * Obtiene contratos para un mes específico o año completo
    */
-  async obtenerContratos(mesEspecifico?: string): Promise<{
+  async obtenerContratos(mesEspecifico?: string, añoEspecifico?: string): Promise<{
     mes: string;
     mesFormato: string;
+    tipo: 'mes' | 'año';
     datos: {
       numeroContrato: string;
       cantidad: number;
@@ -196,8 +264,18 @@ export class FacturaService {
     }[]
   }> {
     try {
-      const mes = mesEspecifico || this.obtenerMesActual();
-      const facturas = await this.repository.obtenerPorMes(mes);
+      let facturas: any[] = [];
+      let mes: string;
+      let tipo: 'mes' | 'año' = 'mes';
+
+      if (añoEspecifico) {
+        facturas = await this.repository.obtenerPorAño(añoEspecifico);
+        mes = `01-${añoEspecifico}`;
+        tipo = 'año';
+      } else {
+        mes = mesEspecifico || this.obtenerMesActual();
+        facturas = await this.repository.obtenerPorMes(mes);
+      }
 
       const contratos: { [key: string]: { cantidad: number; totalVentas: number } } = {};
 
@@ -214,11 +292,14 @@ export class FacturaService {
 
       const [mesNum, año] = mes.split('-');
       const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const mesFormato = `${meses[parseInt(mesNum) - 1]} ${año}`;
+      const mesFormato = tipo === 'año'
+        ? año
+        : `${meses[parseInt(mesNum) - 1]} ${año}`;
 
       return {
-        mes,
+        mes: tipo === 'año' ? año : mes,
         mesFormato,
+        tipo,
         datos: Object.entries(contratos).map(([numeroContrato, data]) => ({
           numeroContrato,
           cantidad: data.cantidad,
@@ -232,11 +313,12 @@ export class FacturaService {
   }
 
   /**
-   * Obtiene empresas para un mes específico
+   * Obtiene empresas para un mes específico o año completo
    */
-  async obtenerEmpresas(mesEspecifico?: string): Promise<{
+  async obtenerEmpresas(mesEspecifico?: string, añoEspecifico?: string): Promise<{
     mes: string;
     mesFormato: string;
+    tipo: 'mes' | 'año';
     datos: {
       empresa: string;
       cantidadFacturas: number;
@@ -244,8 +326,18 @@ export class FacturaService {
     }[]
   }> {
     try {
-      const mes = mesEspecifico || this.obtenerMesActual();
-      const facturas = await this.repository.obtenerPorMes(mes);
+      let facturas: any[] = [];
+      let mes: string;
+      let tipo: 'mes' | 'año' = 'mes';
+
+      if (añoEspecifico) {
+        facturas = await this.repository.obtenerPorAño(añoEspecifico);
+        mes = `01-${añoEspecifico}`;
+        tipo = 'año';
+      } else {
+        mes = mesEspecifico || this.obtenerMesActual();
+        facturas = await this.repository.obtenerPorMes(mes);
+      }
 
       const empresas: { [key: string]: { cantidadFacturas: number; totalVentas: number } } = {};
 
@@ -262,11 +354,14 @@ export class FacturaService {
 
       const [mesNum, año] = mes.split('-');
       const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const mesFormato = `${meses[parseInt(mesNum) - 1]} ${año}`;
+      const mesFormato = tipo === 'año'
+        ? año
+        : `${meses[parseInt(mesNum) - 1]} ${año}`;
 
       return {
-        mes,
+        mes: tipo === 'año' ? año : mes,
         mesFormato,
+        tipo,
         datos: Object.entries(empresas).map(([empresa, data]) => ({
           empresa,
           cantidadFacturas: data.cantidadFacturas,

@@ -6,14 +6,14 @@ export class FacturaController {
 
   /**
    * GET /facturas/meses
-   * Obtiene los meses disponibles
+   * Obtiene los meses disponibles del año actual y los años disponibles
    */
   async obtenerMesesDisponibles(req: Request, res: Response): Promise<void> {
     try {
-      const meses = await this.service.obtenerMesesDisponibles();
+      const mesesYAños = await this.service.obtenerMesesDisponibles();
       res.json({
         success: true,
-        data: meses,
+        data: mesesYAños,
       });
     } catch (error) {
       res.status(500).json({
@@ -24,13 +24,14 @@ export class FacturaController {
   }
 
   /**
-   * GET /facturas/dashboardGeneral?mes=MM-YYYY
+   * GET /facturas/dashboardGeneral?mes=MM-YYYY&año=YYYY
    * Obtiene el dashboard general (mes actual si no se especifica)
    */
   async obtenerDashboardGeneral(req: Request, res: Response): Promise<void> {
     try {
       const mes = req.query.mes as string | undefined;
-      const dashboard = await this.service.obtenerDashboardGeneral(mes);
+      const año = req.query.año as string | undefined;
+      const dashboard = await this.service.obtenerDashboardGeneral(mes, año);
       res.json({
         success: true,
         data: dashboard,
@@ -44,12 +45,13 @@ export class FacturaController {
   }
 
   /**
-   * GET /facturas/ventas-por-producto?mes=MM-YYYY
+   * GET /facturas/ventas-por-producto?mes=MM-YYYY&año=YYYY
    */
   async obtenerVentasXProducto(req: Request, res: Response): Promise<void> {
     try {
       const mes = req.query.mes as string | undefined;
-      const resultado = await this.service.obtenerVentasXProducto(mes);
+      const año = req.query.año as string | undefined;
+      const resultado = await this.service.obtenerVentasXProducto(mes, año);
       res.json({
         success: true,
         data: resultado,
@@ -63,12 +65,13 @@ export class FacturaController {
   }
 
   /**
-   * GET /facturas/ranking-vendedores?mes=MM-YYYY
+   * GET /facturas/ranking-vendedores?mes=MM-YYYY&año=YYYY
    */
   async obtenerRankingVendedores(req: Request, res: Response): Promise<void> {
     try {
       const mes = req.query.mes as string | undefined;
-      const resultado = await this.service.obtenerRankingVendedores(mes);
+      const año = req.query.año as string | undefined;
+      const resultado = await this.service.obtenerRankingVendedores(mes, año);
       res.json({
         success: true,
         data: resultado,
@@ -82,12 +85,13 @@ export class FacturaController {
   }
 
   /**
-   * GET /facturas/contratos?mes=MM-YYYY
+   * GET /facturas/contratos?mes=MM-YYYY&año=YYYY
    */
   async obtenerContratos(req: Request, res: Response): Promise<void> {
     try {
       const mes = req.query.mes as string | undefined;
-      const resultado = await this.service.obtenerContratos(mes);
+      const año = req.query.año as string | undefined;
+      const resultado = await this.service.obtenerContratos(mes, año);
       res.json({
         success: true,
         data: resultado,
@@ -101,12 +105,13 @@ export class FacturaController {
   }
 
   /**
-   * GET /facturas/empresas?mes=MM-YYYY
+   * GET /facturas/empresas?mes=MM-YYYY&año=YYYY
    */
   async obtenerEmpresas(req: Request, res: Response): Promise<void> {
     try {
       const mes = req.query.mes as string | undefined;
-      const resultado = await this.service.obtenerEmpresas(mes);
+      const año = req.query.año as string | undefined;
+      const resultado = await this.service.obtenerEmpresas(mes, año);
       res.json({
         success: true,
         data: resultado,
