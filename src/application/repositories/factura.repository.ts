@@ -187,7 +187,7 @@ export class FacturaRepository {
       cliente: data.CLIENTE || '',
       vendedor: data.VENDEDOR || '',
       producto: data.PRODUCTO || '',
-      total: parseFloat(data.TOTAL) || 0,
+      total: parseFloat(data.IMPORTEMONSECUNDARIA) || 0,
       totalBruto: parseFloat(data.TOTALBRUTO) || 0,
       totalConceptos: parseFloat(data.TOTALCONCEPTOS) || 0,
       cantidad: parseFloat(data.CANTIDAD) || 0,
@@ -199,6 +199,7 @@ export class FacturaRepository {
       descripcion: data.DESCRIPCION || '',
       numeroContrato: data.NUMEROCONTRATO || '',
       empresa: data.EMPRESA || '',
+      // importeMonSecundaria: parseFloat(data.IMPORTEMONSECUNDARIA) || 0,
     };
   }
 }

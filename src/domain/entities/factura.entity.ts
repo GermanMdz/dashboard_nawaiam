@@ -17,5 +17,6 @@ export interface Factura {
   descripcion: string;
   numeroContrato: string;
   empresa: string;
+  // importeMonSecundaria: number;
   [key: string]: any;
 }
