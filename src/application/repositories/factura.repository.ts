@@ -199,6 +199,9 @@ export class FacturaRepository {
       descripcion: data.DESCRIPCION || '',
       numeroContrato: data.NUMEROCONTRATO || '',
       empresa: data.EMPRESA || '',
+      dimensionValor: data.DIMENSIONVALOR || '',
+      nivel1dimension: data.NIVEL1DIMENSION || '',
+      nivel2dimension: data.NIVEL2DIMENSION || '',
       // importeMonSecundaria: parseFloat(data.IMPORTEMONSECUNDARIA) || 0,
     };
   }
