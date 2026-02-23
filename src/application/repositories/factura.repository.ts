@@ -186,7 +186,7 @@ export class FacturaRepository {
       mes: mes,
       cliente: data.CLIENTE || '',
       vendedor: data.VENDEDOR || '',
-      producto: data.PRODUCTORAMA1 || '',
+      producto: data.PRODUCTO || '',
       total: parseFloat(data.IMPORTEMONSECUNDARIA) || 0,
       totalBruto: parseFloat(data.TOTALBRUTO) || 0,
       totalConceptos: parseFloat(data.TOTALCONCEPTOS) || 0,
@@ -199,9 +199,9 @@ export class FacturaRepository {
       descripcion: data.DESCRIPCION || '',
       numeroContrato: data.NUMEROCONTRATO || '',
       empresa: data.EMPRESA || '',
-      dimensionValor: data.DIMENSIONVALOR || '',
-      nivel1dimension: data.NIVEL1DIMENSION || '',
-      nivel2dimension: data.NIVEL2DIMENSION || '',
+      // dimensionValor: data.DIMENSIONVALOR || '',
+      // nivel1dimension: data.NIVEL1DIMENSION || '',
+      // nivel2dimension: data.NIVEL2DIMENSION || '',
       // importeMonSecundaria: parseFloat(data.IMPORTEMONSECUNDARIA) || 0,
     };
   }
