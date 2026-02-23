@@ -110,6 +110,21 @@
       }
     }
 
+    function mapProducto(producto) {
+      const cleaned = producto?.trim().toLowerCase() || '';
+      
+      if (cleaned.includes('representacion')) {
+        return 'Representaciones';
+      }
+      if (cleaned.includes('orientacion vocacional')) {
+        return 'Orientación Vocacional';
+      }
+      if (cleaned.includes('nawi')) {
+        return 'Nawi';
+      }
+      return 'Nawaiam';
+    }
+
     function formatMoney(v) {
       return new Intl.NumberFormat('es-AR', {
         style: 'currency',
@@ -123,18 +138,20 @@
 
       let data = resultado.datos;
 
-      data.sort((a, b) => b.totalVentas - a.totalVentas);
+      const productoMap = {};
+      
+      data.forEach(d => {
+        const productoMapeado = mapProducto(d.producto);
+        
+        if (!productoMap[productoMapeado]) {
+          productoMap[productoMapeado] = 0;
+        }
+        
+        productoMap[productoMapeado] += d.totalVentas;
+      });
 
-      const totalGeneral = data.reduce(
-        (sum, d) => sum + d.totalVentas,
-        0
-      );
-
-      document.getElementById('total').textContent =
-        `Total vendido: ${formatMoney(totalGeneral)}`;
-
-      const labels = data.map(d => d.producto);
-      const ventas = data.map(d => d.totalVentas);
+      const labels = Object.keys(productoMap);
+      const ventas = Object.values(productoMap);
 
       const ctx = document.getElementById('chart').getContext('2d');
 
