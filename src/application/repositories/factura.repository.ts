@@ -186,7 +186,7 @@ export class FacturaRepository {
       mes: mes,
       cliente: data.CLIENTE || '',
       vendedor: data.VENDEDOR || '',
-      producto: data.PRODUCTO || '',
+      producto: data.PRODUCTORAMA1 || '',
       total: parseFloat(data.IMPORTEMONSECUNDARIA) || 0,
       totalBruto: parseFloat(data.TOTALBRUTO) || 0,
       totalConceptos: parseFloat(data.TOTALCONCEPTOS) || 0,
