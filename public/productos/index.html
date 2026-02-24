@@ -151,9 +151,9 @@
         
         productoMap[productoMapeado] += d.totalVentas;
       });
-
-      const labels = Object.keys(productoMap);
-      const ventas = Object.values(productoMap);
+      const sortedEntries = Object.entries(productoMap).sort((a, b) => b[1] - a[1]);
+      const labels = sortedEntries.map(([key]) => key);
+      const ventas = sortedEntries.map(([, value]) => value);
 
       const ctx = document.getElementById('chart').getContext('2d');
 
