@@ -112,7 +112,9 @@
 
     function mapProducto(producto) {
       const cleaned = producto?.trim().toLowerCase() || '';
-      
+      if (cleaned.includes('otros')) {
+        return 'Otros Servicios';
+      }
       if (cleaned.includes('representacion')) {
         return 'Representaciones';
       }

@@ -108,3 +108,5 @@
         }
     ]
 }
+
+Necesito una copia del WebReport ANAFACTURACION que tenga como dimensión base Centro de Costos en lugar de Territorio, para poder consumirlo desde la API.
