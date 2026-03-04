@@ -34,6 +34,7 @@ export class FacturaRepository {
       const datos = await this.http.get<any[]>('/reports/ANAFACTURACION', {
         PARAMWEBREPORT_FechaDesde: this.obtenerPrimerDiaHace5Anos(),
         PARAMWEBREPORT_FechaHasta: this.obtenerUltimoDiaDelAño(),
+        PARAMWEBREPORT_dimension: 'DIMCTC',
       });
       
       // Normalizar datos
@@ -199,7 +200,7 @@ export class FacturaRepository {
       descripcion: data.DESCRIPCION || '',
       numeroContrato: data.NUMEROCONTRATO || '',
       empresa: data.EMPRESA || '',
-      // dimensionValor: data.DIMENSIONVALOR || '',
+      dimensionValor: data.DIMENSIONVALOR || '',
       // nivel1dimension: data.NIVEL1DIMENSION || '',
       // nivel2dimension: data.NIVEL2DIMENSION || '',
       // importeMonSecundaria: parseFloat(data.IMPORTEMONSECUNDARIA) || 0,

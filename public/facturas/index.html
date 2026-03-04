@@ -19,6 +19,7 @@
     .demo-data th { background: #f1f5f9; padding: 8px; text-align: left; border: 1px solid #e2e8f0; font-weight: 600; font-size: 12px; }
     .demo-data td { padding: 8px; border: 1px solid #e2e8f0; font-size: 14px; }
     .loading { text-align:center; padding:20px; color:#64748b }
+    .dim-row td { background: #f8fafc; color: #475569; }
   </style>
   <script src="../components/auth.js"></script>
   <script src="../components/nav-bar-custom.js" defer></script>
@@ -139,8 +140,7 @@
     }
 
     function render(d) {
-      const mes = document.getElementById('mes');
-      mes.textContent = '';
+      document.getElementById('mes').textContent = '';
       const ctx = document.getElementById('chart').getContext('2d');
       const labels = ['Total ventas', 'Promedio por factura', 'Cantidad facturas'];
       const values = [d.totalVentas, d.promedioPorFactura, d.cantidadFacturas];
@@ -191,13 +191,21 @@
         }
       });
 
-      // Renderizar tabla de datos
+      const filaDimensiones = Object.entries(d.dimensiones || {})
+        .map(([dim, valor]) => `
+          <tr class="dim-row">
+            <td>&nbsp;&nbsp;↳ ${dim}</td>
+            <td>${formatMoney(valor)}</td>
+          </tr>
+        `).join('');
+
       const tbody = document.getElementById('demoTable');
       tbody.innerHTML = `
         <tr>
           <td><strong>Total Ventas</strong></td>
           <td>${formatMoney(d.totalVentas)}</td>
         </tr>
+        ${filaDimensiones}
         <tr>
           <td><strong>Promedio por Factura</strong></td>
           <td>${formatMoney(d.promedioPorFactura)}</td>
@@ -213,29 +221,23 @@
       await cargarMesesYAños();
       const mesSelect = document.getElementById('mesSelect');
       
-      // Extraer y cargar datos del primer elemento
       const firstValue = mesSelect.value;
       if (firstValue.startsWith('mes:')) {
-        const mes = firstValue.substring(4);
-        const data = await fetchDashboard(mes, null);
+        const data = await fetchDashboard(firstValue.substring(4), null);
         if (data) render(data);
       } else if (firstValue.startsWith('año:')) {
-        const año = firstValue.substring(4);
-        const data = await fetchDashboard(null, año);
+        const data = await fetchDashboard(null, firstValue.substring(4));
         if (data) render(data);
       }
 
-      // Listener para cambios
       mesSelect.addEventListener('change', async (e) => {
         const value = e.target.value;
         if (value.startsWith('mes:')) {
-          const mes = value.substring(4);
-          const newData = await fetchDashboard(mes, null);
-          if (newData) render(newData);
+          const data = await fetchDashboard(value.substring(4), null);
+          if (data) render(data);
         } else if (value.startsWith('año:')) {
-          const año = value.substring(4);
-          const newData = await fetchDashboard(null, año);
-          if (newData) render(newData);
+          const data = await fetchDashboard(null, value.substring(4));
+          if (data) render(data);
         }
       });
     })();

@@ -20,6 +20,20 @@ export class FacturaService {
     return new Date().getFullYear().toString();
   }
 
+  private agruparPorDimension(facturas: any[]): Record<string, number> {
+    const dimensiones: Record<string, number> = {};
+    for (const f of facturas) {
+      const dim = f.dimensionValor;
+      if (!dim || dim === 'Sin dimensión valor') continue;
+      dimensiones[dim] = (dimensiones[dim] || 0) + f.total;
+    }
+    return Object.fromEntries(
+      Object.entries(dimensiones)
+        .sort((a, b) => b[1] - a[1])
+        .map(([k, v]) => [k, Math.round(v * 100) / 100])
+    );
+  }
+
   /**
    * Obtiene todos los meses disponibles con facturas del año actual
    * y los años anteriores completos (últimos 5 años)
@@ -66,6 +80,7 @@ export class FacturaService {
     tipo: 'mes' | 'año';
     totalVentas: number;
     cantidadFacturas: number;
+    dimensiones: Record<string, number>;
     promedioPorFactura: number;
     montoPendiente: number;
   }> {
@@ -89,6 +104,7 @@ export class FacturaService {
       const cantidadFacturas = facturas.length;
       const promedioPorFactura = cantidadFacturas > 0 ? totalVentas / cantidadFacturas : 0;
       const montoPendiente = facturas.reduce((sum, f) => sum + f.importePendiente, 0);
+      const dimensiones = this.agruparPorDimension(facturas);
 
       const [mesNum, año] = mes.split('-');
       const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -102,6 +118,7 @@ export class FacturaService {
         tipo,
         totalVentas: Math.round(totalVentas * 100) / 100,
         cantidadFacturas,
+        dimensiones,                                          // 👈
         promedioPorFactura: Math.round(promedioPorFactura * 100) / 100,
         montoPendiente: Math.round(montoPendiente * 100) / 100,
       };
