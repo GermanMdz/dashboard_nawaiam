@@ -170,6 +170,10 @@
         },
         options: {
           responsive: true,
+          interaction: {
+            mode: 'nearest',
+            intersect: false
+          },
           scales: {
             y: { beginAtZero: true, ticks: { callback: v => v + '%' } }
           },
