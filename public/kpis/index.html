@@ -301,6 +301,7 @@
       const elLTV = document.getElementById('resLTV');
       elLTV.textContent = fmtUSD(ltv);
       elLTV.className = 'rc-value ' + (ltv >= 0 ? 'positive' : 'negative');
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
     document.getElementById('btnCalcular').addEventListener('click', calcular);
