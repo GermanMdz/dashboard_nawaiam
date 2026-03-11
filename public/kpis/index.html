@@ -263,7 +263,7 @@
         const cuPeriodo = mes ? resCUPeriodo.data : cuAnual;
         document.getElementById('qClientesNuevosFinne').value = cuPeriodo.nuevos;
 
-        document.getElementById('btnCalcular').disabled = false;
+        validarManuales();
       } catch(e) {
         if (e.message === 'AUTH_REQUIRED') { window.location.href = '/login'; return; }
         console.error('Error cargando datos Finnegans:', e);
@@ -303,6 +303,20 @@
       elLTV.className = 'rc-value ' + (ltv >= 0 ? 'positive' : 'negative');
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
+
+    function validarManuales() {
+      const costos         = document.getElementById('costos').value.trim();
+      const clientesInicio = document.getElementById('clientesInicio').value.trim();
+      const tasaDuracion   = document.getElementById('tasaDuracion').value.trim();
+      const finnegansListo = !document.getElementById('btnCalcular').disabled || 
+                             document.getElementById('ticketPromedio').value !== '';
+      const ok = costos !== '' && clientesInicio !== '' && tasaDuracion !== '' && finnegansListo;
+      document.getElementById('btnCalcular').disabled = !ok;
+    }
+
+    ['costos', 'clientesInicio', 'tasaDuracion'].forEach(id => {
+      document.getElementById(id).addEventListener('input', validarManuales);
+    });
 
     document.getElementById('btnCalcular').addEventListener('click', calcular);
 
