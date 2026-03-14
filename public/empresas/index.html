@@ -44,7 +44,7 @@
       <thead>
         <tr>
           <th>Empresa</th>
-          <th>Ingresos</th>
+          <th>Ingresos sin prueba piloto</th>
           <th>Cantidad de Facturas</th>
           <th>% de Ventas</th>
         </tr>
@@ -226,14 +226,17 @@
       });
 
       const tbody = document.getElementById('tablaEmpresas');
-      tbody.innerHTML = sortedEmpresas.map(([empresa, data]) => `
+      tbody.innerHTML = sortedEmpresas.map(([empresa, data]) => {
+        const pilotoVal = Object.entries(data.dimensiones || {}).reduce((acc, [k, v]) => acc + ((k || '').trim().toLowerCase() === 'prueba piloto' ? Number(v) : 0), 0);
+        const netIngresos = Number(data.ingresos || 0) - pilotoVal;
+        return `
         <tr>
           <td><strong>${empresa}</strong></td>
-          <td>${formatMoney(data.ingresos)}</td>
+          <td>${formatMoney(netIngresos)}</td>
           <td>${data.ventas}</td>
           <td>${totalVentas > 0 ? ((data.ventas / totalVentas) * 100).toFixed(1) : 0}%</td>
         </tr>
-      `).join('');
+      `}).join('');
     }
 
     (async () => {
